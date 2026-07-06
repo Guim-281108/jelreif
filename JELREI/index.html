@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JELREI Fricassê</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #0aa3d6;
+    --gold-light: #04b2fd;
+    --dark: #1A1208;
+    --dark2: #2B1E0A;
+    --cream: #FDF6E3;
+    --red: #8B1A1A;
+    --green: #1A5C2A;
+    --card-bg: #2B1E0A;
+    --border: #C9A84C44;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--dark);
+    color: var(--cream);
+    font-family: 'Lato', sans-serif;
+    min-height: 100vh;
+    background-image: repeating-linear-gradient(45deg,transparent,transparent 40px,rgba(201,168,76,0.03) 40px,rgba(201,168,76,0.03) 80px);
+  }
+  header {
+    background: linear-gradient(135deg, #1A1208 60%, #2B1E0A);
+    border-bottom: 2px solid var(--gold);
+    padding: 18px 32px;
+    text-align: center;
+    position: relative;
+    box-shadow: 0 4px 32px rgba(201,168,76,0.15);
+  }
+  header::before, header::after { content: '✦'; color: var(--gold); font-size: 1.2rem; position: absolute; top: 50%; transform: translateY(-50%); }
+  header::before { left: 20px; }
+  header::after { right: 20px; }
+  .logo { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 900; color: var(--gold); letter-spacing: 3px; text-shadow: 0 0 20px rgba(201,168,76,0.4); }
+  .subtitle { font-size: 0.78rem; letter-spacing: 6px; color: var(--gold-light); opacity: 0.7; margin-top: 2px; text-transform: uppercase; }
+
+  /* NAV ABAS PRINCIPAL */
+  .nav-abas {
+    background: linear-gradient(180deg, #1A1208, #1e1508);
+    border-bottom: 1px solid rgba(10,163,214,0.2);
+    display: flex;
+    justify-content: center;
+    gap: 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    flex-wrap: wrap;
+  }
+  .nav-aba {
+    padding: 14px 28px;
+    border: none;
+    background: transparent;
+    color: rgba(255,255,255,0.4);
+    font-family: 'Lato', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .nav-aba:hover { color: var(--gold-light); background: rgba(10,163,214,0.05); }
+  .nav-aba.active { color: var(--gold); border-bottom-color: var(--gold); background: rgba(10,163,214,0.08); }
+
+  /* PÁGINAS */
+  .pagina { display: none; }
+  .pagina.ativa { display: block; }
+
+  .main { max-width: 980px; margin: 0 auto; padding: 28px 16px; }
+
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    color: var(--gold);
+    letter-spacing: 2px;
+    border-left: 3px solid var(--gold);
+    padding-left: 12px;
+    margin-bottom: 16px;
+    margin-top: 28px;
+    text-transform: uppercase;
+  }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 18px;
+    transition: box-shadow 0.2s;
+  }
+  .card:hover { box-shadow: 0 0 18px rgba(201,168,76,0.13); }
+  .card label { display: block; font-size: 0.75rem; letter-spacing: 2px; color: var(--gold-light); text-transform: uppercase; margin-bottom: 8px; opacity: 0.85; }
+  .card .price-fixed { font-size: 0.8rem; color: rgba(255,255,255,0.35); margin-bottom: 10px; letter-spacing: 1px; }
+  .card input[type="number"] {
+    width: 100%;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--cream);
+    font-size: 1.4rem;
+    font-family: 'Lato', sans-serif;
+    font-weight: 700;
+    padding: 8px 12px;
+    outline: none;
+    transition: border 0.2s;
+    text-align: center;
+  }
+  .card input[type="number"]:focus { border-color: var(--gold); background: rgba(201,168,76,0.07); }
+  .card .subtotal { font-size: 0.85rem; color: var(--gold-light); margin-top: 8px; text-align: right; opacity: 0.8; }
+
+  .card input[type="text"], .card select {
+    width: 100%;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--cream);
+    font-size: 1rem;
+    font-family: 'Lato', sans-serif;
+    font-weight: 400;
+    padding: 11px 12px;
+    outline: none;
+    transition: border 0.2s;
+  }
+  .card input[type="text"]:focus, .card select:focus { border-color: var(--gold); background: rgba(201,168,76,0.07); }
+  .card select { cursor: pointer; }
+  .card select option { background: var(--dark2); color: var(--cream); }
+
+  .btn-calc {
+    display: block; width: 100%; margin: 30px 0 0; padding: 16px;
+    background: linear-gradient(135deg, var(--gold), var(--gold-light));
+    color: var(--dark); font-family: 'Playfair Display', serif; font-size: 1.1rem;
+    font-weight: 700; letter-spacing: 3px; border: none; border-radius: 8px;
+    cursor: pointer; text-transform: uppercase;
+    box-shadow: 0 4px 24px rgba(201,168,76,0.25);
+    transition: transform 0.1s, box-shadow 0.2s;
+  }
+  .btn-calc:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(201,168,76,0.4); }
+  .btn-calc:active { transform: translateY(0); }
+
+  .btn-calc.despesa {
+    background: linear-gradient(135deg, #8B1A1A, #C43D3D);
+    box-shadow: 0 4px 24px rgba(139,26,26,0.3);
+  }
+  .btn-calc.despesa:hover { box-shadow: 0 8px 32px rgba(139,26,26,0.45); }
+
+  .resultado {
+    display: none;
+    background: linear-gradient(135deg, #1A2B1A, #0D1A0D);
+    border: 1px solid rgba(80,200,80,0.3);
+    border-radius: 12px;
+    margin-top: 28px;
+    padding: 28px;
+    animation: fadeIn 0.4s ease;
+  }
+  @keyframes fadeIn { from { opacity:0; transform: translateY(10px); } to { opacity:1; transform: none; } }
+  .resultado.show { display: block; }
+  .resultado-title { font-family: 'Playfair Display', serif; color: #6EE86E; font-size: 1.1rem; letter-spacing: 2px; margin-bottom: 20px; text-align: center; text-transform: uppercase; }
+  .res-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 0.92rem; }
+  .res-row:last-child { border-bottom: none; }
+  .res-label { color: rgba(255,255,255,0.6); }
+  .res-val { font-weight: 700; color: var(--gold-light); }
+  .res-total { display: flex; justify-content: space-between; margin-top: 18px; padding: 14px 18px; background: rgba(201,168,76,0.12); border-radius: 8px; border: 1px solid var(--gold); }
+  .res-total .tl { font-family: 'Playfair Display', serif; font-size: 1rem; color: var(--gold); }
+  .res-total .tv { font-family: 'Playfair Display', serif; font-size: 1.5rem; color: var(--gold); font-weight: 900; }
+
+  /* PAGAMENTO */
+  .pagamento-wrap { margin-top: 24px; border-top: 1px solid rgba(201,168,76,0.2); padding-top: 22px; }
+  .pag-title { font-family: 'Playfair Display', serif; font-size: 0.95rem; letter-spacing: 2px; color: var(--gold); text-transform: uppercase; margin-bottom: 14px; }
+  .pag-tabs { display: flex; gap: 10px; margin-bottom: 18px; }
+  .pag-tab {
+    flex: 1; padding: 12px 10px; border-radius: 8px;
+    border: 2px solid rgba(201,168,76,0.25); background: transparent;
+    color: rgba(255,255,255,0.45); font-family: 'Lato', sans-serif;
+    font-size: 0.9rem; font-weight: 700; letter-spacing: 2px;
+    text-transform: uppercase; cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .pag-tab:hover { border-color: var(--gold); color: var(--gold); background: rgba(10,163,214,0.06); }
+  .pag-tab.active { border-color: var(--gold); background: rgba(10,163,214,0.13); color: var(--gold-light); box-shadow: 0 0 16px rgba(10,163,214,0.18); }
+  .pag-tab .tab-icon { font-size: 1.2rem; }
+  .pag-dinheiro, .pag-pix { display: none; animation: fadeIn 0.3s ease; }
+  .pag-dinheiro.show, .pag-pix.show { display: block; }
+  .pag-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+  .pag-field { background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
+  .pag-field label { display: block; font-size: 0.7rem; letter-spacing: 2px; color: var(--gold-light); text-transform: uppercase; margin-bottom: 6px; opacity: 0.75; }
+  .pag-field .pf-val { font-size: 1.3rem; font-weight: 700; color: var(--cream); }
+  .pag-field input[type="number"] { width: 100%; background: transparent; border: none; border-bottom: 1px solid rgba(201,168,76,0.35); border-radius: 0; color: var(--cream); font-size: 1.3rem; font-weight: 700; padding: 4px 0; outline: none; font-family: 'Lato', sans-serif; text-align: left; }
+  .pag-field input[type="number"]:focus { border-bottom-color: var(--gold); background: transparent; }
+  .troco-box { border-radius: 8px; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; font-size: 0.95rem; font-weight: 700; margin-top: 4px; transition: all 0.3s; }
+  .troco-box.positivo { background: rgba(80,200,80,0.12); border: 1px solid rgba(80,200,80,0.35); color: #6EE86E; }
+  .troco-box.negativo { background: rgba(200,60,60,0.12); border: 1px solid rgba(200,60,60,0.35); color: #F87171; }
+  .troco-box.neutro { background: rgba(201,168,76,0.08); border: 1px solid var(--border); color: var(--gold-light); }
+  .troco-box .tr-label { font-size: 0.75rem; letter-spacing: 2px; text-transform: uppercase; opacity: 0.8; }
+  .troco-box .tr-val { font-family: 'Playfair Display', serif; font-size: 1.4rem; }
+  .pix-box { background: linear-gradient(135deg, rgba(10,163,214,0.08), rgba(4,178,253,0.04)); border: 1px solid rgba(10,163,214,0.35); border-radius: 10px; padding: 24px 20px; text-align: center; }
+  .pix-icon { font-size: 2.4rem; margin-bottom: 10px; }
+  .pix-label { font-size: 0.75rem; letter-spacing: 3px; text-transform: uppercase; color: var(--gold-light); opacity: 0.7; margin-bottom: 6px; }
+  .pix-valor { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 900; color: var(--gold); margin-bottom: 20px; text-shadow: 0 0 24px rgba(10,163,214,0.35); }
+  .btn-pix-confirmar { padding: 13px 32px; background: linear-gradient(135deg, #0aa3d6, #04b2fd); color: #0D1A0D; font-family: 'Playfair Display', serif; font-size: 0.95rem; font-weight: 700; letter-spacing: 2px; border: none; border-radius: 8px; cursor: pointer; text-transform: uppercase; box-shadow: 0 4px 20px rgba(10,163,214,0.3); transition: transform 0.15s, box-shadow 0.2s; }
+  .btn-pix-confirmar:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(10,163,214,0.5); }
+  .btn-pix-confirmar:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+  .pix-confirmado { display: none; align-items: center; justify-content: center; gap: 8px; font-size: 1rem; font-weight: 700; color: #6EE86E; letter-spacing: 1px; margin-top: 14px; animation: fadeIn 0.3s; }
+  .pix-confirmado.show { display: flex; }
+
+  .btn-clear { display: block; width: 100%; margin-top: 12px; padding: 10px; background: transparent; color: rgba(255,255,255,0.35); font-size: 0.8rem; letter-spacing: 2px; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; cursor: pointer; text-transform: uppercase; transition: all 0.2s; }
+  .btn-clear:hover { color: var(--red); border-color: var(--red); }
+
+  .historico-wrap { margin-top: 36px; }
+  .historico-lista { list-style: none; margin-top: 10px; }
+  .historico-lista li { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; animation: fadeIn 0.3s; }
+  .historico-lista li .hi-info { color: rgba(255,255,255,0.55); font-size: 0.75rem; }
+  .historico-lista li .hi-total { color: var(--gold); font-weight: 700; font-size: 1rem; }
+  .btn-del { background: none; border: none; color: var(--red); cursor: pointer; font-size: 1rem; opacity: 0.5; transition: opacity 0.2s; padding: 0 4px; }
+  .btn-del:hover { opacity: 1; }
+  .empty-hist { color: rgba(255,255,255,0.25); font-size: 0.82rem; text-align: center; padding: 20px 0; }
+
+  /* ── ABA VENDAS CARTÕES ── */
+  .vc-data-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+  .vc-data-badge {
+    font-size: 0.72rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.35);
+  }
+  .vc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+  .vc-stat {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 22px 20px;
+    text-align: center;
+  }
+  .vc-stat .vs-label { font-size: 0.72rem; letter-spacing: 2px; text-transform: uppercase; color: var(--gold-light); opacity: 0.7; margin-bottom: 10px; }
+  .vc-stat .vs-num { font-family: 'Playfair Display', serif; font-size: 2.6rem; font-weight: 900; color: var(--cream); line-height: 1; }
+  .vc-stat .vs-sub { font-size: 0.78rem; color: rgba(255,255,255,0.3); margin-top: 6px; }
+  .vc-stat.destaque { background: linear-gradient(135deg, rgba(10,163,214,0.12), rgba(4,178,253,0.06)); border-color: rgba(10,163,214,0.4); }
+  .vc-stat.destaque .vs-num { color: var(--gold); font-size: 2rem; }
+
+  .vc-tabela { width: 100%; border-collapse: collapse; margin-top: 6px; }
+  .vc-tabela th { font-size: 0.7rem; letter-spacing: 2px; text-transform: uppercase; color: var(--gold-light); opacity: 0.6; padding: 8px 12px; text-align: left; border-bottom: 1px solid rgba(201,168,76,0.2); }
+  .vc-tabela td { padding: 11px 12px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.88rem; }
+  .vc-tabela tr:last-child td { border-bottom: none; }
+  .vc-tabela tr:hover td { background: rgba(255,255,255,0.02); }
+  .vc-tabela .td-num { font-weight: 700; color: var(--cream); text-align: center; }
+  .vc-tabela .td-val { font-weight: 700; color: var(--gold-light); text-align: right; }
+  .vc-tabela .td-total-row td { background: rgba(201,168,76,0.07); font-size: 0.92rem; }
+  .vc-tabela .td-total-row .td-val { color: var(--gold); font-size: 1rem; }
+  .vc-empty { color: rgba(255,255,255,0.25); font-size: 0.85rem; text-align: center; padding: 40px 0; }
+
+  /* ── ABA ARRECADAÇÃO ── */
+  .arr-hero {
+    background: linear-gradient(135deg, rgba(10,163,214,0.1), rgba(4,178,253,0.05));
+    border: 1px solid rgba(10,163,214,0.3);
+    border-radius: 14px;
+    padding: 32px 28px;
+    text-align: center;
+    margin-bottom: 28px;
+  }
+  .arr-hero-label { font-size: 0.75rem; letter-spacing: 4px; text-transform: uppercase; color: var(--gold-light); opacity: 0.65; margin-bottom: 10px; }
+  .arr-hero-val { font-family: 'Playfair Display', serif; font-size: 3.2rem; font-weight: 900; color: var(--gold); text-shadow: 0 0 32px rgba(10,163,214,0.4); line-height: 1; }
+  .arr-hero-sub { font-size: 0.8rem; color: rgba(255,255,255,0.3); margin-top: 10px; letter-spacing: 1px; }
+
+  .arr-lucro-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 28px; }
+  .arr-lucro-card {
+    border-radius: 12px;
+    padding: 20px 16px;
+    text-align: center;
+    border: 1px solid var(--border);
+    background: var(--card-bg);
+  }
+  .arr-lucro-card.receita { border-color: rgba(80,200,80,0.35); background: linear-gradient(135deg, rgba(80,200,80,0.08), rgba(80,200,80,0.02)); }
+  .arr-lucro-card.despesa { border-color: rgba(200,60,60,0.35); background: linear-gradient(135deg, rgba(200,60,60,0.08), rgba(200,60,60,0.02)); }
+  .arr-lucro-card.lucro { border-color: rgba(201,168,76,0.5); background: linear-gradient(135deg, rgba(201,168,76,0.12), rgba(201,168,76,0.03)); }
+  .arr-lucro-card .al-label { font-size: 0.7rem; letter-spacing: 2px; text-transform: uppercase; opacity: 0.7; margin-bottom: 8px; color: var(--gold-light); }
+  .arr-lucro-card .al-val { font-family: 'Playfair Display', serif; font-size: 1.5rem; font-weight: 900; }
+
+  .arr-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 28px; }
+  .arr-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 18px 14px; text-align: center; }
+  .arr-card .ac-label { font-size: 0.68rem; letter-spacing: 2px; text-transform: uppercase; color: var(--gold-light); opacity: 0.6; margin-bottom: 8px; }
+  .arr-card .ac-val { font-family: 'Playfair Display', serif; font-size: 1.3rem; font-weight: 700; color: var(--cream); }
+  .arr-card .ac-sub { font-size: 0.72rem; color: rgba(255,255,255,0.25); margin-top: 4px; }
+
+  .arr-breakdown { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .arr-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .arr-row:last-child { border-bottom: none; }
+  .arr-row-label { display: flex; align-items: center; gap: 10px; font-size: 0.88rem; color: rgba(255,255,255,0.65); }
+  .arr-row-icon { font-size: 1.1rem; }
+  .arr-row-val { font-weight: 700; color: var(--gold-light); font-size: 0.95rem; }
+  .arr-row-pct { font-size: 0.72rem; color: rgba(255,255,255,0.25); margin-left: 8px; }
+  .arr-bar-wrap { height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; margin-top: 4px; }
+  .arr-bar { height: 4px; background: linear-gradient(90deg, var(--gold), var(--gold-light)); border-radius: 2px; transition: width 0.5s ease; }
+
+  @media (max-width: 600px) {
+    .grid2, .grid3, .vc-grid, .arr-grid, .arr-lucro-grid { grid-template-columns: 1fr 1fr; }
+    .logo { font-size: 1.4rem; }
+    .pag-fields { grid-template-columns: 1fr; }
+    .nav-aba { padding: 12px 14px; font-size: 0.68rem; letter-spacing: 1px; }
+    .arr-hero-val { font-size: 2.2rem; }
+  }
+  @media (max-width: 400px) {
+    .grid2, .grid3 { grid-template-columns: 1fr; }
+    .arr-grid, .arr-lucro-grid { grid-template-columns: 1fr 1fr; }
+    .nav-aba { padding: 10px 10px; font-size: 0.62rem; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">JELREI Fricassê</div>
+  <div class="subtitle">Sistema de Controle do Evento</div>
+</header>
+
+<nav class="nav-abas">
+  <button class="nav-aba active" onclick="trocarAba('lancamento')">🎟️ Lançamento</button>
+  <button class="nav-aba" onclick="trocarAba('vendas')">📊 Vendas Cartões</button>
+  <button class="nav-aba" onclick="trocarAba('despesas')">💸 Despesas</button>
+  <button class="nav-aba" onclick="trocarAba('arrecadacao')">💰 Arrecadação</button>
+</nav>
+
+<!-- ══════════ ABA 1: LANÇAMENTO ══════════ -->
+<div class="pagina ativa" id="pg-lancamento">
+<div class="main">
+
+  <div class="section-title">🎟️ Cartões Vendidos</div>
+  <div class="grid2">
+    <div class="card">
+      <label>Cartão Tipo 1</label>
+      <div class="price-fixed">Valor unitário: R$ 30,00</div>
+      <input type="number" id="qt_cart1" min="0" value="0" oninput="atualizar()">
+      <div class="subtotal" id="sub_cart1">Subtotal: R$ 0,00</div>
+    </div>
+    <div class="card">
+      <label>Cartão Tipo 2</label>
+      <div class="price-fixed">Valor unitário: R$ 20,00</div>
+      <input type="number" id="qt_cart2" min="0" value="0" oninput="atualizar()">
+      <div class="subtotal" id="sub_cart2">Subtotal: R$ 0,00</div>
+    </div>
+  </div>
+
+  <div class="section-title">🥤 Outros Itens</div>
+  <div class="grid3">
+    <div class="card">
+      <label>Bebidas</label>
+      <div class="price-fixed">Valor unitário: R$ 3,00</div>
+      <input type="number" id="qt_beb" min="0" value="0" oninput="atualizar()">
+      <div class="subtotal" id="sub_beb">Subtotal: R$ 0,00</div>
+    </div>
+    <div class="card">
+      <label>🍮 Sobremesas</label>
+      <div class="price-fixed">Valor unitário: R$ 5,00</div>
+      <input type="number" id="qt_sob" min="0" value="0" oninput="atualizar()">
+      <div class="subtotal" id="sub_sob">Subtotal: R$ 0,00</div>
+    </div>
+    <div class="card">
+      <label>👕 Camisetas</label>
+      <div class="price-fixed">Valor unitário: R$ 45,00</div>
+      <input type="number" id="qt_cam" min="0" value="0" oninput="atualizar()">
+      <div class="subtotal" id="sub_cam">Subtotal: R$ 0,00</div>
+    </div>
+  </div>
+
+  <button class="btn-calc" onclick="calcular()">✦ Calcular Totais ✦</button>
+  <button class="btn-clear" onclick="limpar()">↺ Limpar Campos</button>
+
+  <div class="resultado" id="resultado">
+    <div class="resultado-title">✦ Resumo do Lançamento ✦</div>
+    <div class="res-row"><span class="res-label">Cartão Tipo 1</span><span class="res-val" id="r_c1">—</span></div>
+    <div class="res-row"><span class="res-label">Cartão Tipo 2</span><span class="res-val" id="r_c2">—</span></div>
+    <div class="res-row"><span class="res-label">Bebidas</span><span class="res-val" id="r_beb">—</span></div>
+    <div class="res-row"><span class="res-label">Sobremesas</span><span class="res-val" id="r_sob">—</span></div>
+    <div class="res-row"><span class="res-label">Camisetas</span><span class="res-val" id="r_cam">—</span></div>
+    <div class="res-total">
+      <span class="tl">Total Geral</span>
+      <span class="tv" id="r_total">R$ 0,00</span>
+    </div>
+
+    <div class="pagamento-wrap">
+      <div class="pag-title">💳 Forma de Pagamento</div>
+      <div class="pag-tabs">
+        <button class="pag-tab" id="tab-dinheiro" onclick="selecionarPagamento('dinheiro')">
+          <span class="tab-icon">💵</span> Dinheiro
+        </button>
+        <button class="pag-tab" id="tab-pix" onclick="selecionarPagamento('pix')">
+          <span class="tab-icon">⚡</span> Pix
+        </button>
+      </div>
+      <div class="pag-dinheiro" id="pag-dinheiro">
+        <div class="pag-fields">
+          <div class="pag-field">
+            <label>Valor a Pagar</label>
+            <div class="pf-val" id="din-total">R$ 0,00</div>
+          </div>
+          <div class="pag-field">
+            <label>Valor Recebido (R$)</label>
+            <input type="number" id="din-recebido" min="0" step="0.01" placeholder="0,00" oninput="calcularTroco()">
+          </div>
+        </div>
+        <div class="troco-box neutro" id="troco-box">
+          <span class="tr-label">Troco</span>
+          <span class="tr-val" id="troco-val">—</span>
+        </div>
+      </div>
+      <div class="pag-pix" id="pag-pix">
+        <div class="pix-box">
+          <div class="pix-icon">⚡</div>
+          <div class="pix-label">Valor Total a Receber via Pix</div>
+          <div class="pix-valor" id="pix-total">R$ 0,00</div>
+          <button class="btn-pix-confirmar" id="btn-confirmar-pix" onclick="confirmarPix()">✔ Confirmar Pagamento</button>
+          <div class="pix-confirmado" id="pix-confirmado">✅ Pagamento via Pix confirmado!</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="historico-wrap">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:28px;margin-bottom:16px;">
+      <div style="font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--gold);letter-spacing:2px;border-left:3px solid var(--gold);padding-left:12px;text-transform:uppercase;">📋 Histórico de Lançamentos</div>
+      <button onclick="zerarTudo()" style="padding:7px 16px;background:transparent;border:1px solid rgba(139,26,26,0.5);border-radius:6px;color:rgba(248,113,113,0.6);font-size:0.72rem;letter-spacing:2px;text-transform:uppercase;cursor:pointer;" onmouseover="this.style.borderColor='#8B1A1A';this.style.color='#F87171';" onmouseout="this.style.borderColor='rgba(139,26,26,0.5)';this.style.color='rgba(248,113,113,0.6)';">🗑 Zerar Histórico</button>
+    </div>
+    <ul class="historico-lista" id="historico">
+      <li class="empty-hist">Nenhum lançamento registrado ainda.</li>
+    </ul>
+  </div>
+
+</div>
+</div>
+
+<!-- ══════════ ABA 2: VENDAS CARTÕES ══════════ -->
+<div class="pagina" id="pg-vendas">
+<div class="main">
+
+  <div class="section-title">📊 Vendas de Cartões — Resumo do Dia</div>
+
+  <div class="vc-grid">
+    <div class="vc-stat">
+      <div class="vs-label">Cartão Tipo 1 vendidos</div>
+      <div class="vs-num" id="vc-qt1">0</div>
+      <div class="vs-sub">× R$ 30,00 cada</div>
+    </div>
+    <div class="vc-stat">
+      <div class="vs-label">Cartão Tipo 2 vendidos</div>
+      <div class="vs-num" id="vc-qt2">0</div>
+      <div class="vs-sub">× R$ 20,00 cada</div>
+    </div>
+    <div class="vc-stat">
+      <div class="vs-label">Total de cartões</div>
+      <div class="vs-num" id="vc-qtTotal">0</div>
+      <div class="vs-sub">todos os tipos</div>
+    </div>
+    <div class="vc-stat destaque">
+      <div class="vs-label">Total arrecadado (cartões)</div>
+      <div class="vs-num" id="vc-valTotal">R$ 0,00</div>
+      <div class="vs-sub">soma de todos os lançamentos</div>
+    </div>
+  </div>
+
+  <div class="section-title">📋 Detalhes por Lançamento</div>
+  <div id="vc-tabela-wrap">
+    <p class="vc-empty" id="vc-empty">Nenhum lançamento registrado ainda. Registre vendas na aba Lançamento.</p>
+    <table class="vc-tabela" id="vc-tabela" style="display:none">
+      <thead>
+        <tr>
+          <th>Data / Hora</th>
+          <th style="text-align:center">Tipo 1</th>
+          <th style="text-align:center">Tipo 2</th>
+          <th style="text-align:center">Total Cart.</th>
+          <th style="text-align:right">Valor Cartões</th>
+        </tr>
+      </thead>
+      <tbody id="vc-tbody"></tbody>
+    </table>
+  </div>
+
+</div>
+</div>
+
+<!-- ══════════ ABA 3: DESPESAS ══════════ -->
+<div class="pagina" id="pg-despesas">
+<div class="main">
+
+  <div class="section-title">💸 Registrar Despesa</div>
+  <div class="card">
+    <div class="grid2" style="margin-bottom:16px;">
+      <div>
+        <label>Descrição</label>
+        <input type="text" id="desp_desc" placeholder="Ex: Carvão, gás, copos, carne...">
+      </div>
+      <div>
+        <label>Forma de Pagamento</label>
+        <select id="desp_forma">
+          <option value="Dinheiro">💵 Dinheiro</option>
+          <option value="Pix">⚡ Pix</option>
+          <option value="Cartão">💳 Cartão</option>
+        </select>
+      </div>
+    </div>
+    <div>
+      <label>Valor (R$)</label>
+      <input type="number" id="desp_valor" min="0" step="0.01" placeholder="0,00">
+    </div>
+    <button class="btn-calc despesa" onclick="registrarDespesa()">✦ Registrar Despesa ✦</button>
+  </div>
+
+  <div class="historico-wrap">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:28px;margin-bottom:16px;">
+      <div style="font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--gold);letter-spacing:2px;border-left:3px solid var(--gold);padding-left:12px;text-transform:uppercase;">📋 Histórico de Despesas</div>
+      <button onclick="zerarDespesas()" style="padding:7px 16px;background:transparent;border:1px solid rgba(139,26,26,0.5);border-radius:6px;color:rgba(248,113,113,0.6);font-size:0.72rem;letter-spacing:2px;text-transform:uppercase;cursor:pointer;" onmouseover="this.style.borderColor='#8B1A1A';this.style.color='#F87171';" onmouseout="this.style.borderColor='rgba(139,26,26,0.5)';this.style.color='rgba(248,113,113,0.6)';">🗑 Zerar Despesas</button>
+    </div>
+    <ul class="historico-lista" id="historico-despesas">
+      <li class="empty-hist">Nenhuma despesa registrada ainda.</li>
+    </ul>
+  </div>
+
+  <div class="arr-hero" style="margin-top:28px;border-color:rgba(200,60,60,0.35);background:linear-gradient(135deg, rgba(200,60,60,0.1), rgba(200,60,60,0.03));">
+    <div class="arr-hero-label">✦ Total de Despesas ✦</div>
+    <div class="arr-hero-val" id="desp-total" style="color:#F87171;text-shadow:0 0 32px rgba(200,60,60,0.4);">R$ 0,00</div>
+    <div class="arr-hero-sub" id="desp-count">0 despesa(s) registrada(s)</div>
+  </div>
+
+</div>
+</div>
+
+<!-- ══════════ ABA 4: ARRECADAÇÃO TOTAL ══════════ -->
+<div class="pagina" id="pg-arrecadacao">
+<div class="main">
+
+  <div class="section-title">💰 Arrecadação Total do Evento</div>
+
+  <div class="arr-hero">
+    <div class="arr-hero-label">✦ Total Geral Arrecadado ✦</div>
+    <div class="arr-hero-val" id="arr-total">R$ 0,00</div>
+    <div class="arr-hero-sub" id="arr-lancamentos">0 lançamento(s) registrado(s)</div>
+  </div>
+
+  <div class="section-title">📈 Resultado do Evento</div>
+  <div class="arr-lucro-grid">
+    <div class="arr-lucro-card receita">
+      <div class="al-label">Arrecadação</div>
+      <div class="al-val" id="arr-receita" style="color:#6EE86E;">R$ 0,00</div>
+    </div>
+    <div class="arr-lucro-card despesa">
+      <div class="al-label">Despesas</div>
+      <div class="al-val" id="arr-desp-total" style="color:#F87171;">R$ 0,00</div>
+    </div>
+    <div class="arr-lucro-card lucro">
+      <div class="al-label">Lucro Líquido</div>
+      <div class="al-val" id="arr-lucro" style="color:var(--gold);">R$ 0,00</div>
+    </div>
+  </div>
+
+  <div class="arr-grid">
+    <div class="arr-card">
+      <div class="ac-label">Cartões</div>
+      <div class="ac-val" id="arr-cartoes">R$ 0,00</div>
+      <div class="ac-sub" id="arr-cartoes-qt">0 un.</div>
+    </div>
+    <div class="arr-card">
+      <div class="ac-label">Bebidas</div>
+      <div class="ac-val" id="arr-bebidas">R$ 0,00</div>
+      <div class="ac-sub" id="arr-bebidas-qt">0 un.</div>
+    </div>
+    <div class="arr-card">
+      <div class="ac-label">Sobremesas</div>
+      <div class="ac-val" id="arr-sobremesas">R$ 0,00</div>
+      <div class="ac-sub" id="arr-sobremesas-qt">0 un.</div>
+    </div>
+    <div class="arr-card">
+      <div class="ac-label">Camisetas</div>
+      <div class="ac-val" id="arr-camisetas">R$ 0,00</div>
+      <div class="ac-sub" id="arr-camisetas-qt">0 un.</div>
+    </div>
+    <div class="arr-card">
+      <div class="ac-label">Cart. Tipo 1</div>
+      <div class="ac-val" id="arr-c1">R$ 0,00</div>
+      <div class="ac-sub" id="arr-c1-qt">0 un.</div>
+    </div>
+    <div class="arr-card">
+      <div class="ac-label">Cart. Tipo 2</div>
+      <div class="ac-val" id="arr-c2">R$ 0,00</div>
+      <div class="ac-sub" id="arr-c2-qt">0 un.</div>
+    </div>
+  </div>
+
+  <div class="section-title">📊 Distribuição por Categoria</div>
+  <div class="arr-breakdown" id="arr-breakdown">
+    <div class="arr-row">
+      <div class="arr-row-label"><span class="arr-row-icon">🎟️</span> Cartões (Tipo 1 + 2)</div>
+      <div><span class="arr-row-val" id="arr-br-cart">R$ 0,00</span><span class="arr-row-pct" id="arr-pct-cart">0%</span></div>
+    </div>
+    <div style="padding: 0 18px 10px;"><div class="arr-bar-wrap"><div class="arr-bar" id="bar-cart" style="width:0%"></div></div></div>
+    <div class="arr-row">
+      <div class="arr-row-label"><span class="arr-row-icon">🥤</span> Bebidas</div>
+      <div><span class="arr-row-val" id="arr-br-beb">R$ 0,00</span><span class="arr-row-pct" id="arr-pct-beb">0%</span></div>
+    </div>
+    <div style="padding: 0 18px 10px;"><div class="arr-bar-wrap"><div class="arr-bar" id="bar-beb" style="width:0%"></div></div></div>
+    <div class="arr-row">
+      <div class="arr-row-label"><span class="arr-row-icon">🍮</span> Sobremesas</div>
+      <div><span class="arr-row-val" id="arr-br-sob">R$ 0,00</span><span class="arr-row-pct" id="arr-pct-sob">0%</span></div>
+    </div>
+    <div style="padding: 0 18px 10px;"><div class="arr-bar-wrap"><div class="arr-bar" id="bar-sob" style="width:0%"></div></div></div>
+    <div class="arr-row">
+      <div class="arr-row-label"><span class="arr-row-icon">👕</span> Camisetas</div>
+      <div><span class="arr-row-val" id="arr-br-cam">R$ 0,00</span><span class="arr-row-pct" id="arr-pct-cam">0%</span></div>
+    </div>
+    <div style="padding: 0 18px 10px;"><div class="arr-bar-wrap"><div class="arr-bar" id="bar-cam" style="width:0%"></div></div></div>
+  </div>
+
+</div>
+</div>
+
+<script>
+  // PREÇOS FIXOS
+  const PRECOS = { cart1: 30, cart2: 20, beb: 3, sob: 5, cam: 45 };
+  const STORAGE_KEY = 'jelrei_historico';
+  const STORAGE_KEY_DESP = 'jelrei_despesas';
+
+  let historico = [];
+  let despesas = [];
+  let totalAtual = 0;
+  let pagamentoSelecionado = null;
+
+  // ── PERSISTÊNCIA ──
+  function salvar() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(historico)); } catch(e) {}
+  }
+  function carregar() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) historico = JSON.parse(raw);
+    } catch(e) { historico = []; }
+  }
+  function salvarDespesas() {
+    try { localStorage.setItem(STORAGE_KEY_DESP, JSON.stringify(despesas)); } catch(e) {}
+  }
+  function carregarDespesas() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY_DESP);
+      if (raw) despesas = JSON.parse(raw);
+    } catch(e) { despesas = []; }
+  }
+
+  function fmt(v) {
+    return 'R$ ' + Number(v).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+  }
+  function getQt(id) { return parseInt(document.getElementById(id).value) || 0; }
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function trocarAba(aba) {
+    document.querySelectorAll('.pagina').forEach(p => p.classList.remove('ativa'));
+    document.querySelectorAll('.nav-aba').forEach(b => b.classList.remove('active'));
+    document.getElementById('pg-' + aba).classList.add('ativa');
+    event.currentTarget.classList.add('active');
+    if (aba === 'vendas') renderVendas();
+    if (aba === 'despesas') renderDespesas();
+    if (aba === 'arrecadacao') renderArrecadacao();
+  }
+
+  function atualizar() {
+    const qt1 = getQt('qt_cart1'), qt2 = getQt('qt_cart2');
+    const qb = getQt('qt_beb'), qs = getQt('qt_sob'), qc = getQt('qt_cam');
+    document.getElementById('sub_cart1').textContent = 'Subtotal: ' + fmt(qt1 * PRECOS.cart1);
+    document.getElementById('sub_cart2').textContent = 'Subtotal: ' + fmt(qt2 * PRECOS.cart2);
+    document.getElementById('sub_beb').textContent   = 'Subtotal: ' + fmt(qb * PRECOS.beb);
+    document.getElementById('sub_sob').textContent   = 'Subtotal: ' + fmt(qs * PRECOS.sob);
+    document.getElementById('sub_cam').textContent   = 'Subtotal: ' + fmt(qc * PRECOS.cam);
+  }
+
+  function calcular() {
+    const qt1 = getQt('qt_cart1'), qt2 = getQt('qt_cart2');
+    const qb = getQt('qt_beb'), qs = getQt('qt_sob'), qc = getQt('qt_cam');
+    const c1 = qt1 * PRECOS.cart1, c2 = qt2 * PRECOS.cart2;
+    const beb = qb * PRECOS.beb, sob = qs * PRECOS.sob, cam = qc * PRECOS.cam;
+    const total = c1 + c2 + beb + sob + cam;
+    totalAtual = total;
+
+    document.getElementById('r_c1').textContent = fmt(c1) + ' (' + qt1 + ' cartões)';
+    document.getElementById('r_c2').textContent = fmt(c2) + ' (' + qt2 + ' cartões)';
+    document.getElementById('r_beb').textContent = fmt(beb) + ' (' + qb + ' un.)';
+    document.getElementById('r_sob').textContent = fmt(sob) + ' (' + qs + ' un.)';
+    document.getElementById('r_cam').textContent = fmt(cam) + ' (' + qc + ' un.)';
+    document.getElementById('r_total').textContent = fmt(total);
+    document.getElementById('din-total').textContent = fmt(total);
+    document.getElementById('pix-total').textContent = fmt(total);
+    document.getElementById('din-recebido').value = '';
+    resetTroco(); resetPix();
+    document.getElementById('resultado').classList.add('show');
+    if (pagamentoSelecionado) selecionarPagamento(pagamentoSelecionado);
+
+    const agora = new Date();
+    const hora = agora.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+    const data = agora.toLocaleDateString('pt-BR');
+    historico.unshift({ data, hora, c1, c2, beb, sob, cam, total, qt1, qt2, qb, qs, qc, id: Date.now() });
+    salvar();
+    renderHistorico();
+  }
+
+  function selecionarPagamento(tipo) {
+    pagamentoSelecionado = tipo;
+    document.getElementById('tab-dinheiro').classList.toggle('active', tipo === 'dinheiro');
+    document.getElementById('tab-pix').classList.toggle('active', tipo === 'pix');
+    document.getElementById('pag-dinheiro').classList.toggle('show', tipo === 'dinheiro');
+    document.getElementById('pag-pix').classList.toggle('show', tipo === 'pix');
+    if (tipo === 'dinheiro') calcularTroco();
+  }
+
+  function calcularTroco() {
+    const recebido = parseFloat(document.getElementById('din-recebido').value) || 0;
+    const box = document.getElementById('troco-box');
+    const val = document.getElementById('troco-val');
+    if (recebido === 0) { resetTroco(); return; }
+    const troco = recebido - totalAtual;
+    box.className = 'troco-box';
+    if (troco > 0) {
+      box.classList.add('positivo');
+      box.querySelector('.tr-label').textContent = 'Troco a devolver';
+      val.textContent = fmt(troco);
+    } else if (troco < 0) {
+      box.classList.add('negativo');
+      box.querySelector('.tr-label').textContent = '⚠ Valor insuficiente';
+      val.textContent = fmt(Math.abs(troco)) + ' a mais';
+    } else {
+      box.classList.add('neutro');
+      box.querySelector('.tr-label').textContent = 'Sem troco';
+      val.textContent = 'Valor exato ✓';
+    }
+  }
+
+  function resetTroco() {
+    const box = document.getElementById('troco-box');
+    box.className = 'troco-box neutro';
+    box.querySelector('.tr-label').textContent = 'Troco';
+    document.getElementById('troco-val').textContent = '—';
+  }
+
+  function confirmarPix() {
+    document.getElementById('btn-confirmar-pix').disabled = true;
+    document.getElementById('btn-confirmar-pix').textContent = '✔ Confirmado';
+    document.getElementById('pix-confirmado').classList.add('show');
+  }
+
+  function resetPix() {
+    document.getElementById('btn-confirmar-pix').disabled = false;
+    document.getElementById('btn-confirmar-pix').textContent = '✔ Confirmar Pagamento';
+    document.getElementById('pix-confirmado').classList.remove('show');
+  }
+
+  function renderHistorico() {
+    const ul = document.getElementById('historico');
+    ul.innerHTML = '';
+    if (historico.length === 0) {
+      ul.innerHTML = '<li class="empty-hist">Nenhum lançamento registrado ainda.</li>';
+      return;
+    }
+    historico.forEach(h => {
+      const li = document.createElement('li');
+      li.innerHTML = `
+        <div>
+          <div style="color:var(--cream);font-weight:700;">${h.data} às ${h.hora}</div>
+          <div class="hi-info">Cart1: ${h.qt1} | Cart2: ${h.qt2} | Bebidas: ${h.qb} | Sobrem.: ${h.qs} | Camis.: ${h.qc}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;">
+          <span class="hi-total">${fmt(h.total)}</span>
+          <button class="btn-del" onclick="deletar(${h.id})">✕</button>
+        </div>`;
+      ul.appendChild(li);
+    });
+  }
+
+  function deletar(id) {
+    historico = historico.filter(h => h.id !== id);
+    salvar();
+    renderHistorico();
+  }
+
+  function limpar() {
+    ['qt_cart1','qt_cart2','qt_beb','qt_sob','qt_cam'].forEach(id => {
+      document.getElementById(id).value = 0;
+    });
+    atualizar();
+    document.getElementById('resultado').classList.remove('show');
+    pagamentoSelecionado = null; totalAtual = 0;
+  }
+
+  function zerarTudo() {
+    if (!confirm('Tem certeza que deseja apagar TODO o histórico salvo? Essa ação não pode ser desfeita.')) return;
+    historico = [];
+    salvar();
+    renderHistorico();
+  }
+
+  // ── DESPESAS ──
+  function registrarDespesa() {
+    const desc = document.getElementById('desp_desc').value.trim();
+    const forma = document.getElementById('desp_forma').value;
+    const valor = parseFloat(document.getElementById('desp_valor').value) || 0;
+    if (!desc || valor <= 0) {
+      alert('Preencha a descrição e um valor válido para a despesa.');
+      return;
+    }
+    const agora = new Date();
+    const hora = agora.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+    const data = agora.toLocaleDateString('pt-BR');
+    despesas.unshift({ desc, forma, valor, data, hora, id: Date.now() });
+    salvarDespesas();
+    document.getElementById('desp_desc').value = '';
+    document.getElementById('desp_valor').value = '';
+    renderDespesas();
+  }
+
+  function deletarDespesa(id) {
+    despesas = despesas.filter(d => d.id !== id);
+    salvarDespesas();
+    renderDespesas();
+  }
+
+  function zerarDespesas() {
+    if (!confirm('Tem certeza que deseja apagar TODAS as despesas salvas? Essa ação não pode ser desfeita.')) return;
+    despesas = [];
+    salvarDespesas();
+    renderDespesas();
+  }
+
+  function renderDespesas() {
+    const ul = document.getElementById('historico-despesas');
+    ul.innerHTML = '';
+    if (despesas.length === 0) {
+      ul.innerHTML = '<li class="empty-hist">Nenhuma despesa registrada ainda.</li>';
+    } else {
+      despesas.forEach(d => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <div>
+            <div style="color:var(--cream);font-weight:700;">${escapeHtml(d.desc)}</div>
+            <div class="hi-info">${d.data} às ${d.hora} · ${escapeHtml(d.forma)}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:14px;">
+            <span class="hi-total" style="color:#F87171;">${fmt(d.valor)}</span>
+            <button class="btn-del" onclick="deletarDespesa(${d.id})">✕</button>
+          </div>`;
+        ul.appendChild(li);
+      });
+    }
+    const total = despesas.reduce((a,d) => a + d.valor, 0);
+    document.getElementById('desp-total').textContent = fmt(total);
+    document.getElementById('desp-count').textContent = despesas.length + ' despesa(s) registrada(s)';
+  }
+
+  // Carrega ao iniciar
+  carregar();
+  carregarDespesas();
+  renderHistorico();
+
+  // ── VENDAS CARTÕES ──
+  function renderVendas() {
+    const totQt1 = historico.reduce((a,h) => a + h.qt1, 0);
+    const totQt2 = historico.reduce((a,h) => a + h.qt2, 0);
+    const totValCart = historico.reduce((a,h) => a + h.c1 + h.c2, 0);
+
+    document.getElementById('vc-qt1').textContent = totQt1;
+    document.getElementById('vc-qt2').textContent = totQt2;
+    document.getElementById('vc-qtTotal').textContent = totQt1 + totQt2;
+    document.getElementById('vc-valTotal').textContent = fmt(totValCart);
+
+    const empty = document.getElementById('vc-empty');
+    const tabela = document.getElementById('vc-tabela');
+    const tbody = document.getElementById('vc-tbody');
+
+    if (historico.length === 0) {
+      empty.style.display = 'block'; tabela.style.display = 'none'; return;
+    }
+    empty.style.display = 'none'; tabela.style.display = 'table';
+    tbody.innerHTML = '';
+    historico.forEach(h => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${h.data} ${h.hora}</td>
+        <td class="td-num">${h.qt1}</td>
+        <td class="td-num">${h.qt2}</td>
+        <td class="td-num">${h.qt1 + h.qt2}</td>
+        <td class="td-val">${fmt(h.c1 + h.c2)}</td>`;
+      tbody.appendChild(tr);
+    });
+    // linha total
+    const trTot = document.createElement('tr');
+    trTot.className = 'td-total-row';
+    trTot.innerHTML = `
+      <td style="font-weight:700;color:var(--gold-light)">TOTAL</td>
+      <td class="td-num" style="color:var(--gold)">${totQt1}</td>
+      <td class="td-num" style="color:var(--gold)">${totQt2}</td>
+      <td class="td-num" style="color:var(--gold)">${totQt1+totQt2}</td>
+      <td class="td-val" style="color:var(--gold)">${fmt(totValCart)}</td>`;
+    tbody.appendChild(trTot);
+  }
+
+  // ── ARRECADAÇÃO ──
+  function renderArrecadacao() {
+    const totC1  = historico.reduce((a,h) => a + h.c1, 0);
+    const totC2  = historico.reduce((a,h) => a + h.c2, 0);
+    const totBeb = historico.reduce((a,h) => a + h.beb, 0);
+    const totSob = historico.reduce((a,h) => a + h.sob, 0);
+    const totCam = historico.reduce((a,h) => a + h.cam, 0);
+    const totCart = totC1 + totC2;
+    const grand = totCart + totBeb + totSob + totCam;
+
+    const qtC1  = historico.reduce((a,h) => a + h.qt1, 0);
+    const qtC2  = historico.reduce((a,h) => a + h.qt2, 0);
+    const qtBeb = historico.reduce((a,h) => a + h.qb, 0);
+    const qtSob = historico.reduce((a,h) => a + h.qs, 0);
+    const qtCam = historico.reduce((a,h) => a + h.qc, 0);
+
+    document.getElementById('arr-total').textContent = fmt(grand);
+    document.getElementById('arr-lancamentos').textContent = historico.length + ' lançamento(s) registrado(s)';
+
+    document.getElementById('arr-cartoes').textContent = fmt(totCart);
+    document.getElementById('arr-cartoes-qt').textContent = (qtC1+qtC2) + ' un.';
+    document.getElementById('arr-bebidas').textContent = fmt(totBeb);
+    document.getElementById('arr-bebidas-qt').textContent = qtBeb + ' un.';
+    document.getElementById('arr-sobremesas').textContent = fmt(totSob);
+    document.getElementById('arr-sobremesas-qt').textContent = qtSob + ' un.';
+    document.getElementById('arr-camisetas').textContent = fmt(totCam);
+    document.getElementById('arr-camisetas-qt').textContent = qtCam + ' un.';
+    document.getElementById('arr-c1').textContent = fmt(totC1);
+    document.getElementById('arr-c1-qt').textContent = qtC1 + ' un.';
+    document.getElementById('arr-c2').textContent = fmt(totC2);
+    document.getElementById('arr-c2-qt').textContent = qtC2 + ' un.';
+
+    // ── Resultado (Arrecadação x Despesas x Lucro) ──
+    const totDespesas = despesas.reduce((a,d) => a + d.valor, 0);
+    const lucro = grand - totDespesas;
+    document.getElementById('arr-receita').textContent = fmt(grand);
+    document.getElementById('arr-desp-total').textContent = fmt(totDespesas);
+    const lucroEl = document.getElementById('arr-lucro');
+    lucroEl.textContent = fmt(lucro);
+    lucroEl.style.color = lucro >= 0 ? '#6EE86E' : '#F87171';
+
+    // barras de percentual
+    function pct(v) { return grand > 0 ? Math.round(v / grand * 100) : 0; }
+    const pc = pct(totCart), pb = pct(totBeb), ps = pct(totSob), pm = pct(totCam);
+    document.getElementById('arr-br-cart').textContent = fmt(totCart);
+    document.getElementById('arr-pct-cart').textContent = pc + '%';
+    document.getElementById('bar-cart').style.width = pc + '%';
+    document.getElementById('arr-br-beb').textContent = fmt(totBeb);
+    document.getElementById('arr-pct-beb').textContent = pb + '%';
+    document.getElementById('bar-beb').style.width = pb + '%';
+    document.getElementById('arr-br-sob').textContent = fmt(totSob);
+    document.getElementById('arr-pct-sob').textContent = ps + '%';
+    document.getElementById('bar-sob').style.width = ps + '%';
+    document.getElementById('arr-br-cam').textContent = fmt(totCam);
+    document.getElementById('arr-pct-cam').textContent = pm + '%';
+    document.getElementById('bar-cam').style.width = pm + '%';
+  }
+</script>
+</body>
+</html>
