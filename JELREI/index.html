@@ -304,6 +304,26 @@
   .arr-bar-wrap { height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; margin-top: 4px; }
   .arr-bar { height: 4px; background: linear-gradient(90deg, var(--gold), var(--gold-light)); border-radius: 2px; transition: width 0.5s ease; }
 
+  .sync-badge {
+    position: fixed;
+    bottom: 14px;
+    right: 14px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 0.7rem;
+    letter-spacing: 1px;
+    color: rgba(255,255,255,0.4);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    z-index: 200;
+  }
+  .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: #6EE86E; }
+  .sync-dot.loading { background: var(--gold); animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+
   @media (max-width: 600px) {
     .grid2, .grid3, .vc-grid, .arr-grid, .arr-lucro-grid { grid-template-columns: 1fr 1fr; }
     .logo { font-size: 1.4rem; }
@@ -432,7 +452,7 @@
       <button onclick="zerarTudo()" style="padding:7px 16px;background:transparent;border:1px solid rgba(139,26,26,0.5);border-radius:6px;color:rgba(248,113,113,0.6);font-size:0.72rem;letter-spacing:2px;text-transform:uppercase;cursor:pointer;" onmouseover="this.style.borderColor='#8B1A1A';this.style.color='#F87171';" onmouseout="this.style.borderColor='rgba(139,26,26,0.5)';this.style.color='rgba(248,113,113,0.6)';">🗑 Zerar Histórico</button>
     </div>
     <ul class="historico-lista" id="historico">
-      <li class="empty-hist">Nenhum lançamento registrado ainda.</li>
+      <li class="empty-hist">Carregando...</li>
     </ul>
   </div>
 
@@ -521,7 +541,7 @@
       <button onclick="zerarDespesas()" style="padding:7px 16px;background:transparent;border:1px solid rgba(139,26,26,0.5);border-radius:6px;color:rgba(248,113,113,0.6);font-size:0.72rem;letter-spacing:2px;text-transform:uppercase;cursor:pointer;" onmouseover="this.style.borderColor='#8B1A1A';this.style.color='#F87171';" onmouseout="this.style.borderColor='rgba(139,26,26,0.5)';this.style.color='rgba(248,113,113,0.6)';">🗑 Zerar Despesas</button>
     </div>
     <ul class="historico-lista" id="historico-despesas">
-      <li class="empty-hist">Nenhuma despesa registrada ainda.</li>
+      <li class="empty-hist">Carregando...</li>
     </ul>
   </div>
 
@@ -539,6 +559,11 @@
 <div class="main">
 
   <div class="section-title">💰 Arrecadação Total do Evento</div>
+
+  <div class="card" style="margin-bottom:24px;">
+    <label style="margin-bottom:14px;">📤 Exportar Dados</label>
+    <button class="btn-calc" style="margin:0;" onclick="exportarWord()">📄 Exportar para Word</button>
+  </div>
 
   <div class="arr-hero">
     <div class="arr-hero-label">✦ Total Geral Arrecadado ✦</div>
@@ -622,35 +647,66 @@
 </div>
 </div>
 
+<div class="sync-badge"><span class="sync-dot" id="sync-dot"></span><span id="sync-text">sincronizado</span></div>
+
 <script>
   // PREÇOS FIXOS
   const PRECOS = { cart1: 30, cart2: 20, beb: 3, sob: 5, cam: 45 };
-  const STORAGE_KEY = 'jelrei_historico';
-  const STORAGE_KEY_DESP = 'jelrei_despesas';
 
   let historico = [];
   let despesas = [];
   let totalAtual = 0;
   let pagamentoSelecionado = null;
 
-  // ── PERSISTÊNCIA ──
-  function salvar() {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(historico)); } catch(e) {}
+  function setSync(status) {
+    const dot = document.getElementById('sync-dot');
+    const txt = document.getElementById('sync-text');
+    if (!dot) return;
+    if (status === 'loading') { dot.className = 'sync-dot loading'; txt.textContent = 'sincronizando...'; }
+    else if (status === 'error') { dot.className = 'sync-dot'; dot.style.background = '#F87171'; txt.textContent = 'erro ao salvar'; }
+    else { dot.className = 'sync-dot'; dot.style.background = '#6EE86E'; txt.textContent = 'sincronizado (compartilhado)'; }
   }
-  function carregar() {
+
+  // ── PERSISTÊNCIA COMPARTILHADA (Firebase Realtime Database — todos os usuários veem os mesmos dados) ──
+  const FIREBASE_URL = 'https://jelrei-fricasse-default-rtdb.firebaseio.com';
+
+  async function salvar() {
+    setSync('loading');
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) historico = JSON.parse(raw);
-    } catch(e) { historico = []; }
+      const r = await fetch(`${FIREBASE_URL}/historico.json`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(historico)
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      setSync('ok');
+    } catch (e) { console.error('Erro ao salvar histórico:', e); setSync('error'); }
   }
-  function salvarDespesas() {
-    try { localStorage.setItem(STORAGE_KEY_DESP, JSON.stringify(despesas)); } catch(e) {}
-  }
-  function carregarDespesas() {
+  async function carregar() {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY_DESP);
-      if (raw) despesas = JSON.parse(raw);
-    } catch(e) { despesas = []; }
+      const r = await fetch(`${FIREBASE_URL}/historico.json`);
+      const data = await r.json();
+      historico = data || [];
+    } catch (e) { console.error('Erro ao carregar histórico:', e); historico = []; }
+  }
+  async function salvarDespesas() {
+    setSync('loading');
+    try {
+      const r = await fetch(`${FIREBASE_URL}/despesas.json`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(despesas)
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      setSync('ok');
+    } catch (e) { console.error('Erro ao salvar despesas:', e); setSync('error'); }
+  }
+  async function carregarDespesas() {
+    try {
+      const r = await fetch(`${FIREBASE_URL}/despesas.json`);
+      const data = await r.json();
+      despesas = data || [];
+    } catch (e) { console.error('Erro ao carregar despesas:', e); despesas = []; }
   }
 
   function fmt(v) {
@@ -668,9 +724,14 @@
     document.querySelectorAll('.nav-aba').forEach(b => b.classList.remove('active'));
     document.getElementById('pg-' + aba).classList.add('ativa');
     event.currentTarget.classList.add('active');
-    if (aba === 'vendas') renderVendas();
-    if (aba === 'despesas') renderDespesas();
-    if (aba === 'arrecadacao') renderArrecadacao();
+    if (aba === 'vendas') { refrescarDados().then(renderVendas); }
+    if (aba === 'despesas') { refrescarDados().then(renderDespesas); }
+    if (aba === 'arrecadacao') { refrescarDados().then(renderArrecadacao); }
+  }
+
+  // Recarrega os dados mais recentes do armazenamento compartilhado (outros usuários podem ter lançado algo)
+  async function refrescarDados() {
+    await Promise.all([carregar(), carregarDespesas()]);
   }
 
   function atualizar() {
@@ -683,7 +744,7 @@
     document.getElementById('sub_cam').textContent   = 'Subtotal: ' + fmt(qc * PRECOS.cam);
   }
 
-  function calcular() {
+  async function calcular() {
     const qt1 = getQt('qt_cart1'), qt2 = getQt('qt_cart2');
     const qb = getQt('qt_beb'), qs = getQt('qt_sob'), qc = getQt('qt_cam');
     const c1 = qt1 * PRECOS.cart1, c2 = qt2 * PRECOS.cart2;
@@ -704,11 +765,14 @@
     document.getElementById('resultado').classList.add('show');
     if (pagamentoSelecionado) selecionarPagamento(pagamentoSelecionado);
 
+    // Busca o histórico mais recente antes de adicionar, para não sobrescrever lançamentos de outras pessoas
+    await carregar();
+
     const agora = new Date();
     const hora = agora.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
     const data = agora.toLocaleDateString('pt-BR');
     historico.unshift({ data, hora, c1, c2, beb, sob, cam, total, qt1, qt2, qb, qs, qc, id: Date.now() });
-    salvar();
+    await salvar();
     renderHistorico();
   }
 
@@ -784,9 +848,10 @@
     });
   }
 
-  function deletar(id) {
+  async function deletar(id) {
+    await carregar();
     historico = historico.filter(h => h.id !== id);
-    salvar();
+    await salvar();
     renderHistorico();
   }
 
@@ -799,15 +864,15 @@
     pagamentoSelecionado = null; totalAtual = 0;
   }
 
-  function zerarTudo() {
-    if (!confirm('Tem certeza que deseja apagar TODO o histórico salvo? Essa ação não pode ser desfeita.')) return;
+  async function zerarTudo() {
+    if (!confirm('Tem certeza que deseja apagar TODO o histórico compartilhado? Essa ação afeta todos que usam o app e não pode ser desfeita.')) return;
     historico = [];
-    salvar();
+    await salvar();
     renderHistorico();
   }
 
   // ── DESPESAS ──
-  function registrarDespesa() {
+  async function registrarDespesa() {
     const desc = document.getElementById('desp_desc').value.trim();
     const forma = document.getElementById('desp_forma').value;
     const valor = parseFloat(document.getElementById('desp_valor').value) || 0;
@@ -815,26 +880,28 @@
       alert('Preencha a descrição e um valor válido para a despesa.');
       return;
     }
+    await carregarDespesas();
     const agora = new Date();
     const hora = agora.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
     const data = agora.toLocaleDateString('pt-BR');
     despesas.unshift({ desc, forma, valor, data, hora, id: Date.now() });
-    salvarDespesas();
+    await salvarDespesas();
     document.getElementById('desp_desc').value = '';
     document.getElementById('desp_valor').value = '';
     renderDespesas();
   }
 
-  function deletarDespesa(id) {
+  async function deletarDespesa(id) {
+    await carregarDespesas();
     despesas = despesas.filter(d => d.id !== id);
-    salvarDespesas();
+    await salvarDespesas();
     renderDespesas();
   }
 
-  function zerarDespesas() {
-    if (!confirm('Tem certeza que deseja apagar TODAS as despesas salvas? Essa ação não pode ser desfeita.')) return;
+  async function zerarDespesas() {
+    if (!confirm('Tem certeza que deseja apagar TODAS as despesas compartilhadas? Essa ação afeta todos que usam o app e não pode ser desfeita.')) return;
     despesas = [];
-    salvarDespesas();
+    await salvarDespesas();
     renderDespesas();
   }
 
@@ -864,9 +931,13 @@
   }
 
   // Carrega ao iniciar
-  carregar();
-  carregarDespesas();
-  renderHistorico();
+  (async function init() {
+    setSync('loading');
+    await refrescarDados();
+    renderHistorico();
+    renderDespesas();
+    setSync('ok');
+  })();
 
   // ── VENDAS CARTÕES ──
   function renderVendas() {
@@ -966,6 +1037,79 @@
     document.getElementById('arr-br-cam').textContent = fmt(totCam);
     document.getElementById('arr-pct-cam').textContent = pm + '%';
     document.getElementById('bar-cam').style.width = pm + '%';
+  }
+
+  // ── EXPORTAÇÃO ──
+  async function exportarWord() {
+    await refrescarDados();
+
+    const totC1 = historico.reduce((a,h)=>a+h.c1,0), totC2 = historico.reduce((a,h)=>a+h.c2,0);
+    const totBeb = historico.reduce((a,h)=>a+h.beb,0), totSob = historico.reduce((a,h)=>a+h.sob,0), totCam = historico.reduce((a,h)=>a+h.cam,0);
+    const grand = totC1+totC2+totBeb+totSob+totCam;
+    const totDesp = despesas.reduce((a,d)=>a+d.valor,0);
+    const lucro = grand - totDesp;
+    const agora = new Date().toLocaleDateString('pt-BR');
+
+    const linhasLanc = historico.map(h => `
+      <tr>
+        <td>${h.data} ${h.hora}</td><td>${h.qt1}</td><td>${h.qt2}</td>
+        <td>${h.qb}</td><td>${h.qs}</td><td>${h.qc}</td><td>${fmt(h.total)}</td>
+      </tr>`).join('');
+
+    const linhasDesp = despesas.map(d => `
+      <tr><td>${d.data} ${d.hora}</td><td>${escapeHtml(d.desc)}</td><td>${escapeHtml(d.forma)}</td><td>${fmt(d.valor)}</td></tr>`).join('');
+
+    const html = `
+      <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+      <head><meta charset="utf-8"><title>Relatório JELREI Fricassê</title>
+      <style>
+        body{font-family:Calibri,Arial,sans-serif;color:#222;}
+        h1{color:#8B1A1A;} h2{color:#0aa3d6;border-bottom:1px solid #ccc;padding-bottom:4px;}
+        table{border-collapse:collapse;width:100%;margin-bottom:20px;}
+        th,td{border:1px solid #ccc;padding:6px 10px;font-size:12px;text-align:left;}
+        th{background:#f0f0f0;}
+        .total-row td{font-weight:bold;background:#fdf6e3;}
+      </style></head>
+      <body>
+        <h1>JELREI Fricassê — Relatório do Evento</h1>
+        <p>Gerado em: ${agora}</p>
+
+        <h2>Resumo Financeiro</h2>
+        <table>
+          <tr><th>Categoria</th><th>Valor</th></tr>
+          <tr><td>Cartão Tipo 1</td><td>${fmt(totC1)}</td></tr>
+          <tr><td>Cartão Tipo 2</td><td>${fmt(totC2)}</td></tr>
+          <tr><td>Bebidas</td><td>${fmt(totBeb)}</td></tr>
+          <tr><td>Sobremesas</td><td>${fmt(totSob)}</td></tr>
+          <tr><td>Camisetas</td><td>${fmt(totCam)}</td></tr>
+          <tr class="total-row"><td>Total Arrecadado</td><td>${fmt(grand)}</td></tr>
+          <tr class="total-row"><td>Total Despesas</td><td>${fmt(totDesp)}</td></tr>
+          <tr class="total-row"><td>Lucro Líquido</td><td>${fmt(lucro)}</td></tr>
+        </table>
+
+        <h2>Histórico de Lançamentos</h2>
+        <table>
+          <tr><th>Data/Hora</th><th>Cart.1</th><th>Cart.2</th><th>Bebidas</th><th>Sobrem.</th><th>Camis.</th><th>Total</th></tr>
+          ${linhasLanc || '<tr><td colspan="7">Nenhum lançamento registrado.</td></tr>'}
+        </table>
+
+        <h2>Histórico de Despesas</h2>
+        <table>
+          <tr><th>Data/Hora</th><th>Descrição</th><th>Forma</th><th>Valor</th></tr>
+          ${linhasDesp || '<tr><td colspan="4">Nenhuma despesa registrada.</td></tr>'}
+        </table>
+      </body></html>`;
+
+    const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const dataStr = new Date().toLocaleDateString('pt-BR').replace(/\//g,'-');
+    a.href = url;
+    a.download = `JELREI_Fricasse_Relatorio_${dataStr}.doc`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 </script>
 </body>
