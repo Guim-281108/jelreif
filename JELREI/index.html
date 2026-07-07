@@ -652,6 +652,17 @@
 <script>
   // PREÇOS FIXOS
   const PRECOS = { cart1: 30, cart2: 20, beb: 3, sob: 5, cam: 45 };
+  const SENHA_EXCLUSAO = 'amanda281108';
+
+  function confirmarSenha() {
+    const digitada = prompt('🔒 Digite a senha para confirmar a exclusão:');
+    if (digitada === null) return false; // cancelou
+    if (digitada !== SENHA_EXCLUSAO) {
+      alert('❌ Senha incorreta. Nada foi apagado.');
+      return false;
+    }
+    return true;
+  }
 
   let historico = [];
   let despesas = [];
@@ -849,6 +860,7 @@
   }
 
   async function deletar(id) {
+    if (!confirmarSenha()) return;
     await carregar();
     historico = historico.filter(h => h.id !== id);
     await salvar();
@@ -865,6 +877,7 @@
   }
 
   async function zerarTudo() {
+    if (!confirmarSenha()) return;
     if (!confirm('Tem certeza que deseja apagar TODO o histórico compartilhado? Essa ação afeta todos que usam o app e não pode ser desfeita.')) return;
     historico = [];
     await salvar();
@@ -892,6 +905,7 @@
   }
 
   async function deletarDespesa(id) {
+    if (!confirmarSenha()) return;
     await carregarDespesas();
     despesas = despesas.filter(d => d.id !== id);
     await salvarDespesas();
@@ -899,6 +913,7 @@
   }
 
   async function zerarDespesas() {
+    if (!confirmarSenha()) return;
     if (!confirm('Tem certeza que deseja apagar TODAS as despesas compartilhadas? Essa ação afeta todos que usam o app e não pode ser desfeita.')) return;
     despesas = [];
     await salvarDespesas();
