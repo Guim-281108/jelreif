@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JELREI Fricassê</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <div class="logo">JELREI Fricassê</div>
+  <div class="subtitle">Sistema de Controle do Evento</div>
+</header>
+
+<nav class="nav-abas">
+  <button class="nav-aba active" onclick="trocarAba('lancamento', this)">🎟️ Lançamento</button>
+  <button class="nav-aba" onclick="trocarAba('vendas', this)">📊 Vendas Cartões</button>
+  <button class="nav-aba" onclick="trocarAba('despesas', this)">💸 Despesas</button>
+  <button class="nav-aba" onclick="trocarAba('arrecadacao', this)">💰 Arrecadação</button>
+</nav>
+
+<!-- ══════════ ABA 1: LANÇAMENTO ══════════ -->
+<div class="pagina ativa" id="pg-lancamento">
+<div class="main">
+
+  <div class="section-title">🎟️ Cartões Vendidos</div>
+  <div class="grid2">
+    <div class="card">
+      <label>Cartão Tipo 1</label>
+      <div class="price-fixed">Valor unitário: R$ 30,00</div>
+      <input type="number" id="qt_cart1" min="0" value="0" oninput="atualizar()">
+      <div class="subtotal" id="sub_cart1">Subtotal: R$ 0,00</div>
+    </div>
+    <div class="card">
+      <label>Cartão Tipo 2</label>
+      <div class="price-fixed">Valor unitário: R$ 20,00</div>
+      <input type="number" id="qt_cart2" min="0" value="0" oninput="atualizar()">
+      <div class="subtotal" id="sub_cart2">Subtotal: R$ 0,00</div>
+    </div>
+  </div>
+
+  <div class="section-title">🥤 Outros Itens</div>
+  <div class="grid3">
+    <div class="card">
+      <label>Bebidas</label>
+      <div class="price-fixed">Valor unitário: R$ 3,00</div>
+      <input type="number" id="qt_beb" min="0" value="0" oninput="atualizar()">
+      <div class="subtotal" id="sub_beb">Subtotal: R$ 0,00</div>
+    </div>
+    <div class="card">
+      <label>🍮 Sobremesas</label>
+      <div class="price-fixed">Valor unitário: R$ 5,00</div>
+      <input type="number" id="qt_sob" min="0" value="0" oninput="atualizar()">
+      <div class="subtotal" id="sub_sob">Subtotal: R$ 0,00</div>
+    </div>
+    <div class="card">
+      <label>👕 Camisetas</label>
+      <div class="price-fixed">Valor unitário: R$ 45,00</div>
+      <input type="number" id="qt_cam" min="0" value="0" oninput="atualizar()">
+      <div class="subtotal" id="sub_cam">Subtotal: R$ 0,00</div>
+    </div>
+  </div>
+
+  <button class="btn-calc" onclick="calcular()">✦ Calcular Totais ✦</button>
+  <button class="btn-clear" onclick="limpar()">↺ Limpar Campos</button>
+
+  <div class="resultado" id="resultado">
+    <div class="resultado-title">✦ Resumo do Lançamento ✦</div>
+    <div class="res-row"><span class="res-label">Cartão Tipo 1</span><span class="res-val" id="r_c1">—</span></div>
+    <div class="res-row"><span class="res-label">Cartão Tipo 2</span><span class="res-val" id="r_c2">—</span></div>
+    <div class="res-row"><span class="res-label">Bebidas</span><span class="res-val" id="r_beb">—</span></div>
+    <div class="res-row"><span class="res-label">Sobremesas</span><span class="res-val" id="r_sob">—</span></div>
+    <div class="res-row"><span class="res-label">Camisetas</span><span class="res-val" id="r_cam">—</span></div>
+    <div class="res-total">
+      <span class="tl">Total Geral</span>
+      <span class="tv" id="r_total">R$ 0,00</span>
+    </div>
+
+    <div class="pagamento-wrap">
+      <div class="pag-title">💳 Forma de Pagamento</div>
+      <div class="pag-tabs">
+        <button class="pag-tab" id="tab-dinheiro" onclick="selecionarPagamento('dinheiro')">
+          <span class="tab-icon">💵</span> Dinheiro
+        </button>
+        <button class="pag-tab" id="tab-pix" onclick="selecionarPagamento('pix')">
+          <span class="tab-icon">⚡</span> Pix
+        </button>
+      </div>
+      <div class="pag-dinheiro" id="pag-dinheiro">
+        <div class="pag-fields">
+          <div class="pag-field">
+            <label>Valor a Pagar</label>
+            <div class="pf-val" id="din-total">R$ 0,00</div>
+          </div>
+          <div class="pag-field">
+            <label>Valor Recebido (R$)</label>
+            <input type="number" id="din-recebido" min="0" step="0.01" placeholder="0,00" oninput="calcularTroco()">
+          </div>
+        </div>
+        <div class="troco-box neutro" id="troco-box">
+          <span class="tr-label">Troco</span>
+          <span class="tr-val" id="troco-val">—</span>
+        </div>
+      </div>
+      <div class="pag-pix" id="pag-pix">
+        <div class="pix-box">
+          <div class="pix-icon">⚡</div>
+          <div class="pix-label">Valor Total a Receber via Pix</div>
+          <div class="pix-valor" id="pix-total">R$ 0,00</div>
+          <button class="btn-pix-confirmar" id="btn-confirmar-pix" onclick="confirmarPix()">✔ Confirmar Pagamento</button>
+          <div class="pix-confirmado" id="pix-confirmado">✅ Pagamento via Pix confirmado!</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="historico-wrap">
+    <div class="hist-header">
+      <div class="hist-title">📋 Histórico de Lançamentos</div>
+      <button class="btn-zerar" onclick="zerarTudo()">🗑 Zerar Histórico</button>
+    </div>
+    <ul class="historico-lista" id="historico">
+      <li class="empty-hist">Carregando...</li>
+    </ul>
+  </div>
+
+</div>
+</div>
+
+<!-- ══════════ ABA 2: VENDAS CARTÕES ══════════ -->
+<div class="pagina" id="pg-vendas">
+<div class="main">
+
+  <div class="section-title">📊 Vendas de Cartões — Resumo do Dia</div>
+
+  <div class="vc-grid">
+    <div class="vc-stat">
+      <div class="vs-label">Cartão Tipo 1 vendidos</div>
+      <div class="vs-num" id="vc-qt1">0</div>
+      <div class="vs-sub">× R$ 30,00 cada</div>
+    </div>
+    <div class="vc-stat">
+      <div class="vs-label">Cartão Tipo 2 vendidos</div>
+      <div class="vs-num" id="vc-qt2">0</div>
+      <div class="vs-sub">× R$ 20,00 cada</div>
+    </div>
+    <div class="vc-stat">
+      <div class="vs-label">Total de cartões</div>
+      <div class="vs-num" id="vc-qtTotal">0</div>
+      <div class="vs-sub">todos os tipos</div>
+    </div>
+    <div class="vc-stat destaque">
+      <div class="vs-label">Total arrecadado (cartões)</div>
+      <div class="vs-num" id="vc-valTotal">R$ 0,00</div>
+      <div class="vs-sub">soma de todos os lançamentos</div>
+    </div>
+  </div>
+
+  <div class="section-title">📋 Detalhes por Lançamento</div>
+  <div id="vc-tabela-wrap">
+    <p class="vc-empty" id="vc-empty">Nenhum lançamento registrado ainda. Registre vendas na aba Lançamento.</p>
+    <table class="vc-tabela" id="vc-tabela" style="display:none">
+      <thead>
+        <tr>
+          <th>Data / Hora</th>
+          <th style="text-align:center">Tipo 1</th>
+          <th style="text-align:center">Tipo 2</th>
+          <th style="text-align:center">Total Cart.</th>
+          <th style="text-align:right">Valor Cartões</th>
+        </tr>
+      </thead>
+      <tbody id="vc-tbody"></tbody>
+    </table>
+  </div>
+
+</div>
+</div>
+
+<!-- ══════════ ABA 3: DESPESAS ══════════ -->
+<div class="pagina" id="pg-despesas">
+<div class="main">
+
+  <div class="section-title">💸 Registrar Despesa</div>
+  <div class="card">
+    <div class="grid2" style="margin-bottom:16px;">
+      <div>
+        <label>Descrição</label>
+        <input type="text" id="desp_desc" placeholder="Ex: Carvão, gás, copos, carne...">
+      </div>
+      <div>
+        <label>Forma de Pagamento</label>
+        <select id="desp_forma">
+          <option value="Dinheiro">💵 Dinheiro</option>
+          <option value="Pix">⚡ Pix</option>
+          <option value="Cartão">💳 Cartão</option>
+        </select>
+      </div>
+    </div>
+    <div>
+      <label>Valor (R$)</label>
+      <input type="number" id="desp_valor" min="0" step="0.01" placeholder="0,00">
+    </div>
+    <button class="btn-calc despesa" onclick="registrarDespesa()">✦ Registrar Despesa ✦</button>
+  </div>
+
+  <div class="historico-wrap">
+    <div class="hist-header">
+      <div class="hist-title">📋 Histórico de Despesas</div>
+      <button class="btn-zerar" onclick="zerarDespesas()">🗑 Zerar Despesas</button>
+    </div>
+    <ul class="historico-lista" id="historico-despesas">
+      <li class="empty-hist">Carregando...</li>
+    </ul>
+  </div>
+
+  <div class="arr-hero" style="margin-top:28px;border-color:rgba(200,60,60,0.35);background:linear-gradient(135deg, rgba(200,60,60,0.1), rgba(200,60,60,0.03));">
+    <div class="arr-hero-label">✦ Total de Despesas ✦</div>
+    <div class="arr-hero-val" id="desp-total" style="color:#F87171;text-shadow:0 0 32px rgba(200,60,60,0.4);">R$ 0,00</div>
+    <div class="arr-hero-sub" id="desp-count">0 despesa(s) registrada(s)</div>
+  </div>
+
+</div>
+</div>
+
+<!-- ══════════ ABA 4: ARRECADAÇÃO TOTAL ══════════ -->
+<div class="pagina" id="pg-arrecadacao">
+<div class="main">
+
+  <div class="section-title">💰 Arrecadação Total do Evento</div>
+
+  <div class="card" style="margin-bottom:24px;">
+    <label style="margin-bottom:14px;">📤 Exportar Dados</label>
+    <button class="btn-calc" style="margin:0;" onclick="exportarWord()">📄 Exportar para Word</button>
+  </div>
+
+  <div class="arr-hero">
+    <div class="arr-hero-label">✦ Total Geral Arrecadado ✦</div>
+    <div class="arr-hero-val" id="arr-total">R$ 0,00</div>
+    <div class="arr-hero-sub" id="arr-lancamentos">0 lançamento(s) registrado(s)</div>
+  </div>
+
+  <div class="section-title">📈 Resultado do Evento</div>
+  <div class="arr-lucro-grid">
+    <div class="arr-lucro-card receita">
+      <div class="al-label">Arrecadação</div>
+      <div class="al-val" id="arr-receita" style="color:#6EE86E;">R$ 0,00</div>
+    </div>
+    <div class="arr-lucro-card despesa">
+      <div class="al-label">Despesas</div>
+      <div class="al-val" id="arr-desp-total" style="color:#F87171;">R$ 0,00</div>
+    </div>
+    <div class="arr-lucro-card lucro">
+      <div class="al-label">Lucro Líquido</div>
+      <div class="al-val" id="arr-lucro" style="color:var(--gold);">R$ 0,00</div>
+    </div>
+  </div>
+
+  <div class="arr-grid">
+    <div class="arr-card">
+      <div class="ac-label">Cartões</div>
+      <div class="ac-val" id="arr-cartoes">R$ 0,00</div>
+      <div class="ac-sub" id="arr-cartoes-qt">0 un.</div>
+    </div>
+    <div class="arr-card">
+      <div class="ac-label">Bebidas</div>
+      <div class="ac-val" id="arr-bebidas">R$ 0,00</div>
+      <div class="ac-sub" id="arr-bebidas-qt">0 un.</div>
+    </div>
+    <div class="arr-card">
+      <div class="ac-label">Sobremesas</div>
+      <div class="ac-val" id="arr-sobremesas">R$ 0,00</div>
+      <div class="ac-sub" id="arr-sobremesas-qt">0 un.</div>
+    </div>
+    <div class="arr-card">
+      <div class="ac-label">Camisetas</div>
+      <div class="ac-val" id="arr-camisetas">R$ 0,00</div>
+      <div class="ac-sub" id="arr-camisetas-qt">0 un.</div>
+    </div>
+    <div class="arr-card">
+      <div class="ac-label">Cart. Tipo 1</div>
+      <div class="ac-val" id="arr-c1">R$ 0,00</div>
+      <div class="ac-sub" id="arr-c1-qt">0 un.</div>
+    </div>
+    <div class="arr-card">
+      <div class="ac-label">Cart. Tipo 2</div>
+      <div class="ac-val" id="arr-c2">R$ 0,00</div>
+      <div class="ac-sub" id="arr-c2-qt">0 un.</div>
+    </div>
+  </div>
+
+  <div class="section-title">📊 Distribuição por Categoria</div>
+  <div class="arr-breakdown" id="arr-breakdown">
+    <div class="arr-row">
+      <div class="arr-row-label"><span class="arr-row-icon">🎟️</span> Cartões (Tipo 1 + 2)</div>
+      <div><span class="arr-row-val" id="arr-br-cart">R$ 0,00</span><span class="arr-row-pct" id="arr-pct-cart">0%</span></div>
+    </div>
+    <div class="arr-bar-pad"><div class="arr-bar-wrap"><div class="arr-bar" id="bar-cart" style="width:0%"></div></div></div>
+    <div class="arr-row">
+      <div class="arr-row-label"><span class="arr-row-icon">🥤</span> Bebidas</div>
+      <div><span class="arr-row-val" id="arr-br-beb">R$ 0,00</span><span class="arr-row-pct" id="arr-pct-beb">0%</span></div>
+    </div>
+    <div class="arr-bar-pad"><div class="arr-bar-wrap"><div class="arr-bar" id="bar-beb" style="width:0%"></div></div></div>
+    <div class="arr-row">
+      <div class="arr-row-label"><span class="arr-row-icon">🍮</span> Sobremesas</div>
+      <div><span class="arr-row-val" id="arr-br-sob">R$ 0,00</span><span class="arr-row-pct" id="arr-pct-sob">0%</span></div>
+    </div>
+    <div class="arr-bar-pad"><div class="arr-bar-wrap"><div class="arr-bar" id="bar-sob" style="width:0%"></div></div></div>
+    <div class="arr-row">
+      <div class="arr-row-label"><span class="arr-row-icon">👕</span> Camisetas</div>
+      <div><span class="arr-row-val" id="arr-br-cam">R$ 0,00</span><span class="arr-row-pct" id="arr-pct-cam">0%</span></div>
+    </div>
+    <div class="arr-bar-pad"><div class="arr-bar-wrap"><div class="arr-bar" id="bar-cam" style="width:0%"></div></div></div>
+  </div>
+
+</div>
+</div>
+
+<div class="sync-badge"><span class="sync-dot" id="sync-dot"></span><span id="sync-text">sincronizado</span></div>
+
+<script src="script.js"></script>
+</body>
+</html>
