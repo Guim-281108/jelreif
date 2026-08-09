@@ -42,6 +42,7 @@ header::after { right: 20px; }
   top: 0;
   z-index: 100;
   flex-wrap: wrap;
+  -webkit-overflow-scrolling: touch;
 }
 .nav-aba {
   padding: 14px 28px;
@@ -231,9 +232,9 @@ header::after { right: 20px; }
 .hi-forma { color: rgba(255,255,255,0.4); font-size: 0.72rem; letter-spacing: 1px; text-transform: uppercase; margin-left: 6px; }
 .hi-pendente { display: inline-block; margin-top: 6px; background: rgba(200,60,60,0.15); border: 1px solid rgba(200,60,60,0.4); color: #F87171; font-size: 0.72rem; font-weight: 700; letter-spacing: 1px; padding: 3px 10px; border-radius: 20px; }
 .hi-completo { display: inline-block; margin-top: 6px; background: rgba(80,200,80,0.12); border: 1px solid rgba(80,200,80,0.35); color: #6EE86E; font-size: 0.7rem; font-weight: 700; letter-spacing: 1px; padding: 3px 10px; border-radius: 20px; }
-.btn-del { background: none; border: none; color: var(--red); cursor: pointer; font-size: 1rem; opacity: 0.5; transition: opacity 0.2s; padding: 0 4px; }
+.btn-del { background: none; border: none; color: var(--red); cursor: pointer; font-size: 1rem; opacity: 0.5; transition: opacity 0.2s; padding: 8px; min-width: 36px; min-height: 36px; }
 .btn-del:hover { opacity: 1; }
-.btn-edit { background: none; border: none; color: var(--gold-light); cursor: pointer; font-size: 1rem; opacity: 0.55; transition: opacity 0.2s; padding: 0 4px; }
+.btn-edit { background: none; border: none; color: var(--gold-light); cursor: pointer; font-size: 1rem; opacity: 0.55; transition: opacity 0.2s; padding: 8px; min-width: 36px; min-height: 36px; }
 .btn-edit:hover { opacity: 1; }
 .empty-hist { color: rgba(255,255,255,0.25); font-size: 0.82rem; text-align: center; padding: 20px 0; }
 
@@ -247,11 +248,11 @@ header::after { right: 20px; }
 .busca-icon { position: absolute; left: 14px; font-size: 0.9rem; opacity: 0.4; pointer-events: none; }
 .busca-wrap input[type="text"] {
   width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--border);
-  border-radius: 8px; color: var(--cream); font-size: 0.9rem; font-family: 'Lato', sans-serif;
+  border-radius: 8px; color: var(--cream); font-size: 1rem; font-family: 'Lato', sans-serif;
   padding: 11px 38px 11px 38px; outline: none; transition: border 0.2s;
 }
 .busca-wrap input[type="text"]:focus { border-color: var(--gold); background: rgba(201,168,76,0.07); }
-.busca-limpar { position: absolute; right: 8px; background: none; border: none; color: rgba(255,255,255,0.3); cursor: pointer; font-size: 0.85rem; padding: 6px 8px; display: none; transition: color 0.2s; }
+.busca-limpar { position: absolute; right: 4px; background: none; border: none; color: rgba(255,255,255,0.3); cursor: pointer; font-size: 0.85rem; padding: 10px 12px; display: none; transition: color 0.2s; min-width: 40px; min-height: 40px; }
 .busca-limpar:hover { color: var(--red); }
 .busca-limpar.show { display: block; }
 .busca-vazia { color: rgba(255,255,255,0.25); font-size: 0.85rem; text-align: center; padding: 20px 0; }
@@ -305,7 +306,7 @@ header::after { right: 20px; }
 .vc-stat.destaque { background: linear-gradient(135deg, rgba(10,163,214,0.12), rgba(4,178,253,0.06)); border-color: rgba(10,163,214,0.4); }
 .vc-stat.destaque .vs-num { color: var(--gold); font-size: 2rem; }
 
-.vc-tabela { width: 100%; border-collapse: collapse; margin-top: 6px; }
+.vc-tabela { width: 100%; min-width: 560px; border-collapse: collapse; margin-top: 6px; }
 .vc-tabela th { font-size: 0.7rem; letter-spacing: 2px; text-transform: uppercase; color: var(--gold-light); opacity: 0.6; padding: 8px 12px; text-align: left; border-bottom: 1px solid rgba(201,168,76,0.2); }
 .vc-tabela td { padding: 11px 12px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.88rem; }
 .vc-tabela tr:last-child td { border-bottom: none; }
@@ -315,6 +316,7 @@ header::after { right: 20px; }
 .vc-tabela .td-total-row td { background: rgba(201,168,76,0.07); font-size: 0.92rem; }
 .vc-tabela .td-total-row .td-val { color: var(--gold); font-size: 1rem; }
 .vc-empty { color: rgba(255,255,255,0.25); font-size: 0.85rem; text-align: center; padding: 40px 0; }
+#vc-tabela-wrap { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 8px; }
 
 /* ── ABA ARRECADAÇÃO ── */
 .arr-hero {
@@ -389,16 +391,58 @@ header::after { right: 20px; }
 .sync-dot.loading { background: var(--gold); animation: pulse 1s infinite; }
 @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
 
+/* ══════════ RESPONSIVIDADE — TABLET / CELULAR ══════════ */
 @media (max-width: 600px) {
+  .main { padding: 20px 12px; }
   .grid2, .grid3, .vc-grid, .arr-grid, .arr-lucro-grid { grid-template-columns: 1fr 1fr; }
   .logo { font-size: 1.4rem; }
-  .pag-fields { grid-template-columns: 1fr; }
+  .subtitle { font-size: 0.65rem; letter-spacing: 4px; }
+  header { padding: 14px 46px; }
+
   .nav-aba { padding: 12px 14px; font-size: 0.68rem; letter-spacing: 1px; }
-  .arr-hero-val { font-size: 2.2rem; }
+
+  .section-title { font-size: 1rem; margin-top: 22px; }
+
+  .card { padding: 16px 14px; }
+  .card input[type="number"] { font-size: 1.2rem; padding: 10px 10px; }
+
+  .btn-calc { padding: 14px; font-size: 1rem; letter-spacing: 2px; }
+
+  .resultado { padding: 18px 16px; margin-top: 20px; }
+  .resultado-title { font-size: 1rem; }
+  .res-total .tv { font-size: 1.3rem; }
+
+  .nome-wrap { padding: 12px 14px; }
+
+  .pag-fields { grid-template-columns: 1fr; }
+  .pag-tab { padding: 12px 8px; font-size: 0.8rem; }
+  .pix-valor { font-size: 1.6rem; }
+
+  .modal-box { padding: 20px 16px; }
   .modal-grid { grid-template-columns: 1fr; }
+
+  .arr-hero { padding: 24px 18px; }
+  .arr-hero-val { font-size: 2.2rem; }
+
+  .arr-lucro-card .al-val { font-size: 1.2rem; }
+
+  .historico-lista li { padding: 12px; }
+  .historico-lista li > div:last-child { width: 100%; justify-content: flex-end; }
+
+  .pend-row { flex-wrap: wrap; gap: 6px; }
 }
+
 @media (max-width: 400px) {
   .grid2, .grid3 { grid-template-columns: 1fr; }
-  .arr-grid, .arr-lucro-grid { grid-template-columns: 1fr 1fr; }
+  .vc-grid, .arr-grid, .arr-lucro-grid { grid-template-columns: 1fr 1fr; }
   .nav-aba { padding: 10px 10px; font-size: 0.62rem; }
+  header { padding: 12px 34px; }
+  header::before, header::after { font-size: 1rem; }
+  .logo { font-size: 1.2rem; letter-spacing: 2px; }
+  .arr-hero-val { font-size: 1.8rem; }
+  .pix-valor { font-size: 1.4rem; }
+  .res-total .tv { font-size: 1.15rem; }
 }
+
+/* Evita que qualquer elemento cause rolagem horizontal indesejada na página */
+html, body { overflow-x: hidden; }
