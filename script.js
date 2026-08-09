@@ -16,6 +16,7 @@ let historico = [];
 let despesas = [];
 let totalAtual = 0;
 let pagamentoSelecionado = null;
+let idEdicaoAtual = null;
 
 function setSync(status) {
   const dot = document.getElementById('sync-dot');
@@ -71,6 +72,9 @@ async function carregarDespesas() {
 function fmt(v) {
   return 'R$ ' + Number(v).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
 }
+function normalizar(str) {
+  return (str || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
 function getQt(id) { return parseInt(document.getElementById(id).value) || 0; }
 function escapeHtml(str) {
   const div = document.createElement('div');
@@ -103,13 +107,18 @@ function atualizar() {
   document.getElementById('sub_cam').textContent   = 'Subtotal: ' + fmt(qc * PRECOS.cam);
 }
 
-async function calcular() {
+let lancamentoAtual = null;
+
+function calcular() {
   const qt1 = getQt('qt_cart1'), qt2 = getQt('qt_cart2');
   const qb = getQt('qt_beb'), qs = getQt('qt_sob'), qc = getQt('qt_cam');
   const c1 = qt1 * PRECOS.cart1, c2 = qt2 * PRECOS.cart2;
   const beb = qb * PRECOS.beb, sob = qs * PRECOS.sob, cam = qc * PRECOS.cam;
   const total = c1 + c2 + beb + sob + cam;
   totalAtual = total;
+
+  // Guarda os dados calculados; só vira lançamento salvo quando o pagamento for confirmado
+  lancamentoAtual = { c1, c2, beb, sob, cam, total, qt1, qt2, qb, qs, qc };
 
   document.getElementById('r_c1').textContent = fmt(c1) + ' (' + qt1 + ' cartões)';
   document.getElementById('r_c2').textContent = fmt(c2) + ' (' + qt2 + ' cartões)';
@@ -120,19 +129,41 @@ async function calcular() {
   document.getElementById('din-total').textContent = fmt(total);
   document.getElementById('pix-total').textContent = fmt(total);
   document.getElementById('din-recebido').value = '';
-  resetTroco(); resetPix();
+  document.getElementById('nome-comprador').value = '';
+  resetTroco(); resetPix(); resetDinheiro();
   document.getElementById('resultado').classList.add('show');
-  if (pagamentoSelecionado) selecionarPagamento(pagamentoSelecionado);
+  pagamentoSelecionado = null;
+  document.getElementById('tab-dinheiro').classList.remove('active');
+  document.getElementById('tab-pix').classList.remove('active');
+  document.getElementById('pag-dinheiro').classList.remove('show');
+  document.getElementById('pag-pix').classList.remove('show');
+  document.getElementById('nome-comprador').focus();
+}
 
-  // Busca o histórico mais recente antes de adicionar, para não sobrescrever lançamentos de outras pessoas
+// Salva o lançamento já finalizado (com forma de pagamento e valores) no histórico compartilhado
+async function finalizarLancamento(dadosPagamento) {
+  const nome = document.getElementById('nome-comprador').value.trim();
+  if (!nome) {
+    alert('Informe o nome de quem está comprando antes de confirmar o pagamento.');
+    document.getElementById('nome-comprador').focus();
+    return false;
+  }
+  if (!lancamentoAtual) return false;
+
   await carregar();
-
   const agora = new Date();
   const hora = agora.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
   const data = agora.toLocaleDateString('pt-BR');
-  historico.unshift({ data, hora, c1, c2, beb, sob, cam, total, qt1, qt2, qb, qs, qc, id: Date.now() });
+  historico.unshift({
+    ...lancamentoAtual,
+    nome,
+    data, hora,
+    id: Date.now(),
+    ...dadosPagamento
+  });
   await salvar();
   renderHistorico();
+  return true;
 }
 
 function selecionarPagamento(tipo) {
@@ -148,21 +179,33 @@ function calcularTroco() {
   const recebido = parseFloat(document.getElementById('din-recebido').value) || 0;
   const box = document.getElementById('troco-box');
   const val = document.getElementById('troco-val');
-  if (recebido === 0) { resetTroco(); return; }
+  const btn = document.getElementById('btn-confirmar-dinheiro');
+  if (recebido === 0) {
+    resetTroco();
+    btn.textContent = '✔ Confirmar Pagamento';
+    btn.classList.remove('parcial');
+    return;
+  }
   const troco = recebido - totalAtual;
   box.className = 'troco-box';
   if (troco > 0) {
     box.classList.add('positivo');
     box.querySelector('.tr-label').textContent = 'Troco a devolver';
     val.textContent = fmt(troco);
+    btn.textContent = '✔ Confirmar Pagamento';
+    btn.classList.remove('parcial');
   } else if (troco < 0) {
     box.classList.add('negativo');
     box.querySelector('.tr-label').textContent = '⚠ Valor insuficiente';
-    val.textContent = fmt(Math.abs(troco)) + ' a mais';
+    val.textContent = fmt(Math.abs(troco)) + ' faltando';
+    btn.textContent = '⚠ Aceitar Pagamento Parcial (falta ' + fmt(Math.abs(troco)) + ')';
+    btn.classList.add('parcial');
   } else {
     box.classList.add('neutro');
     box.querySelector('.tr-label').textContent = 'Sem troco';
     val.textContent = 'Valor exato ✓';
+    btn.textContent = '✔ Confirmar Pagamento';
+    btn.classList.remove('parcial');
   }
 }
 
@@ -173,10 +216,47 @@ function resetTroco() {
   document.getElementById('troco-val').textContent = '—';
 }
 
-function confirmarPix() {
+async function confirmarDinheiro() {
+  if (!lancamentoAtual) return;
+  const recebido = parseFloat(document.getElementById('din-recebido').value) || 0;
+  const total = lancamentoAtual.total;
+  const valorPago = Math.min(recebido, total);
+  const falta = Math.max(0, total - recebido);
+  const status = falta > 0.004 ? 'pendente' : 'completo';
+
+  const ok = await finalizarLancamento({ pagamento: 'dinheiro', valorPago, falta, status });
+  if (!ok) return;
+
+  document.getElementById('btn-confirmar-dinheiro').disabled = true;
+  document.getElementById('dinheiro-confirmado').textContent = status === 'pendente'
+    ? '⚠ Lançamento registrado — falta ' + fmt(falta) + '. Edite depois quando receber o restante.'
+    : '✅ Lançamento registrado!';
+  document.getElementById('dinheiro-confirmado').classList.add('show');
+
+  setTimeout(() => {
+    limpar();
+  }, 1800);
+}
+
+function resetDinheiro() {
+  document.getElementById('btn-confirmar-dinheiro').disabled = false;
+  document.getElementById('btn-confirmar-dinheiro').classList.remove('parcial');
+  document.getElementById('btn-confirmar-dinheiro').textContent = '✔ Confirmar Pagamento';
+  document.getElementById('dinheiro-confirmado').classList.remove('show');
+}
+
+async function confirmarPix() {
+  if (!lancamentoAtual) return;
+  const ok = await finalizarLancamento({ pagamento: 'pix', valorPago: lancamentoAtual.total, falta: 0, status: 'completo' });
+  if (!ok) return;
+
   document.getElementById('btn-confirmar-pix').disabled = true;
   document.getElementById('btn-confirmar-pix').textContent = '✔ Confirmado';
   document.getElementById('pix-confirmado').classList.add('show');
+
+  setTimeout(() => {
+    limpar();
+  }, 1800);
 }
 
 function resetPix() {
@@ -187,24 +267,127 @@ function resetPix() {
 
 function renderHistorico() {
   const ul = document.getElementById('historico');
+  const buscaInput = document.getElementById('busca-nome');
+  const busca = normalizar(buscaInput ? buscaInput.value : '');
+  const limparBtn = document.getElementById('busca-limpar');
+  if (limparBtn) limparBtn.classList.toggle('show', busca.length > 0);
+
   ul.innerHTML = '';
   if (historico.length === 0) {
     ul.innerHTML = '<li class="empty-hist">Nenhum lançamento registrado ainda.</li>';
     return;
   }
-  historico.forEach(h => {
+
+  const listaFiltrada = busca
+    ? historico.filter(h => normalizar(h.nome).includes(busca))
+    : historico;
+
+  if (listaFiltrada.length === 0) {
+    ul.innerHTML = '<li class="empty-hist">Nenhum lançamento encontrado para "' + escapeHtml(buscaInput.value) + '".</li>';
+    return;
+  }
+
+  listaFiltrada.forEach(h => {
     const li = document.createElement('li');
+    const nome = h.nome ? escapeHtml(h.nome) : 'Sem nome';
+    const formaTxt = h.pagamento === 'pix' ? '⚡ Pix' : (h.pagamento === 'dinheiro' ? '💵 Dinheiro' : '—');
+    // Compatibilidade com lançamentos antigos sem status/valorPago
+    const status = h.status || 'completo';
+    const falta = h.falta || 0;
+    const badge = status === 'pendente'
+      ? `<span class="hi-pendente">⚠ Falta ${fmt(falta)}</span>`
+      : `<span class="hi-completo">✓ Pago</span>`;
     li.innerHTML = `
       <div>
-        <div style="color:var(--cream);font-weight:700;">${h.data} às ${h.hora}</div>
-        <div class="hi-info">Cart1: ${h.qt1} | Cart2: ${h.qt2} | Bebidas: ${h.qb} | Sobrem.: ${h.qs} | Camis.: ${h.qc}</div>
+        <div><span class="hi-nome">${nome}</span><span class="hi-forma">${formaTxt}</span></div>
+        <div class="hi-info">${h.data} às ${h.hora} · Cart1: ${h.qt1} | Cart2: ${h.qt2} | Bebidas: ${h.qb} | Sobrem.: ${h.qs} | Camis.: ${h.qc}</div>
+        <div>${badge}</div>
       </div>
-      <div style="display:flex;align-items:center;gap:14px;">
+      <div style="display:flex;align-items:center;gap:10px;">
         <span class="hi-total">${fmt(h.total)}</span>
+        <button class="btn-edit" onclick="abrirEdicao(${h.id})">✎</button>
         <button class="btn-del" onclick="deletar(${h.id})">✕</button>
       </div>`;
     ul.appendChild(li);
   });
+}
+
+// ── EDIÇÃO DE LANÇAMENTOS ──
+function limparBusca() {
+  document.getElementById('busca-nome').value = '';
+  renderHistorico();
+}
+
+async function abrirEdicao(id) {
+  await carregar();
+  const h = historico.find(x => x.id === id);
+  if (!h) return;
+  idEdicaoAtual = id;
+  document.getElementById('edit-nome').value = h.nome || '';
+  document.getElementById('edit-qt1').value = h.qt1;
+  document.getElementById('edit-qt2').value = h.qt2;
+  document.getElementById('edit-qb').value = h.qb;
+  document.getElementById('edit-qs').value = h.qs;
+  document.getElementById('edit-qc').value = h.qc;
+  const valorPagoAtual = (h.valorPago != null) ? h.valorPago : h.total;
+  document.getElementById('edit-valorpago').value = valorPagoAtual;
+  atualizarPreviewEdicao();
+  document.getElementById('modal-editar').classList.add('show');
+}
+
+function atualizarPreviewEdicao() {
+  const qt1 = parseInt(document.getElementById('edit-qt1').value) || 0;
+  const qt2 = parseInt(document.getElementById('edit-qt2').value) || 0;
+  const qb = parseInt(document.getElementById('edit-qb').value) || 0;
+  const qs = parseInt(document.getElementById('edit-qs').value) || 0;
+  const qc = parseInt(document.getElementById('edit-qc').value) || 0;
+  const total = qt1*PRECOS.cart1 + qt2*PRECOS.cart2 + qb*PRECOS.beb + qs*PRECOS.sob + qc*PRECOS.cam;
+  const valorPago = parseFloat(document.getElementById('edit-valorpago').value) || 0;
+  const falta = Math.max(0, total - valorPago);
+  let texto = 'Novo total: ' + fmt(total);
+  if (falta > 0.004) {
+    texto += ' · falta ' + fmt(falta);
+  } else {
+    texto += ' · quitado ✓';
+  }
+  document.getElementById('edit-total-preview').textContent = texto;
+}
+
+function fecharModalEdicao() {
+  document.getElementById('modal-editar').classList.remove('show');
+  idEdicaoAtual = null;
+}
+
+async function salvarEdicao() {
+  if (idEdicaoAtual === null) return;
+
+  const nome = document.getElementById('edit-nome').value.trim();
+  const qt1 = parseInt(document.getElementById('edit-qt1').value) || 0;
+  const qt2 = parseInt(document.getElementById('edit-qt2').value) || 0;
+  const qb = parseInt(document.getElementById('edit-qb').value) || 0;
+  const qs = parseInt(document.getElementById('edit-qs').value) || 0;
+  const qc = parseInt(document.getElementById('edit-qc').value) || 0;
+
+  if (!nome) {
+    alert('Informe o nome do comprador.');
+    return;
+  }
+
+  const c1 = qt1*PRECOS.cart1, c2 = qt2*PRECOS.cart2, beb = qb*PRECOS.beb, sob = qs*PRECOS.sob, cam = qc*PRECOS.cam;
+  const total = c1 + c2 + beb + sob + cam;
+  let valorPago = parseFloat(document.getElementById('edit-valorpago').value) || 0;
+  if (valorPago > total) valorPago = total;
+  if (valorPago < 0) valorPago = 0;
+  const falta = Math.max(0, total - valorPago);
+  const status = falta > 0.004 ? 'pendente' : 'completo';
+
+  await carregar();
+  const idx = historico.findIndex(x => x.id === idEdicaoAtual);
+  if (idx === -1) { fecharModalEdicao(); return; }
+  historico[idx] = { ...historico[idx], nome, qt1, qt2, qb, qs, qc, c1, c2, beb, sob, cam, total, valorPago, falta, status };
+  await salvar();
+  renderHistorico();
+  fecharModalEdicao();
 }
 
 async function deletar(id) {
@@ -221,7 +404,14 @@ function limpar() {
   });
   atualizar();
   document.getElementById('resultado').classList.remove('show');
-  pagamentoSelecionado = null; totalAtual = 0;
+  document.getElementById('nome-comprador').value = '';
+  document.getElementById('din-recebido').value = '';
+  resetTroco(); resetPix(); resetDinheiro();
+  document.getElementById('tab-dinheiro').classList.remove('active');
+  document.getElementById('tab-pix').classList.remove('active');
+  document.getElementById('pag-dinheiro').classList.remove('show');
+  document.getElementById('pag-pix').classList.remove('show');
+  pagamentoSelecionado = null; totalAtual = 0; lancamentoAtual = null;
 }
 
 async function zerarTudo() {
@@ -336,6 +526,11 @@ function renderVendas() {
 }
 
 // ── ARRECADAÇÃO ──
+function limparBuscaPend() {
+  document.getElementById('busca-nome-pend').value = '';
+  renderArrecadacao();
+}
+
 function renderArrecadacao() {
   const totC1  = historico.reduce((a,h) => a + h.c1, 0);
   const totC2  = historico.reduce((a,h) => a + h.c2, 0);
@@ -343,7 +538,11 @@ function renderArrecadacao() {
   const totSob = historico.reduce((a,h) => a + h.sob, 0);
   const totCam = historico.reduce((a,h) => a + h.cam, 0);
   const totCart = totC1 + totC2;
-  const grand = totCart + totBeb + totSob + totCam;
+  const grand = totCart + totBeb + totSob + totCam; // valor total vendido (nominal)
+
+  // Valor efetivamente recebido / pendente (compatível com lançamentos antigos sem esses campos)
+  const totalPendente = historico.reduce((a,h) => a + (h.falta || 0), 0);
+  const totalRecebido = grand - totalPendente;
 
   const qtC1  = historico.reduce((a,h) => a + h.qt1, 0);
   const qtC2  = historico.reduce((a,h) => a + h.qt2, 0);
@@ -351,8 +550,37 @@ function renderArrecadacao() {
   const qtSob = historico.reduce((a,h) => a + h.qs, 0);
   const qtCam = historico.reduce((a,h) => a + h.qc, 0);
 
-  document.getElementById('arr-total').textContent = fmt(grand);
-  document.getElementById('arr-lancamentos').textContent = historico.length + ' lançamento(s) registrado(s)';
+  document.getElementById('arr-total').textContent = fmt(totalRecebido);
+  let lancTxt = historico.length + ' lançamento(s) registrado(s)';
+  if (totalPendente > 0.004) lancTxt += ' · ' + fmt(totalPendente) + ' em pendências';
+  document.getElementById('arr-lancamentos').textContent = lancTxt;
+
+  // ── Lista de pendências ──
+  const pendWrap = document.getElementById('pend-wrap');
+  const pendentes = historico.filter(h => (h.status || 'completo') === 'pendente');
+  const buscaPendInput = document.getElementById('busca-nome-pend');
+  const buscaPend = normalizar(buscaPendInput ? buscaPendInput.value : '');
+  const limparPendBtn = document.getElementById('busca-limpar-pend');
+  if (limparPendBtn) limparPendBtn.classList.toggle('show', buscaPend.length > 0);
+
+  const pendentesFiltrados = buscaPend
+    ? pendentes.filter(h => normalizar(h.nome).includes(buscaPend))
+    : pendentes;
+
+  if (pendentes.length === 0) {
+    pendWrap.innerHTML = '<div class="pend-empty">Nenhuma pendência no momento. Tudo pago! 🎉</div>';
+  } else if (pendentesFiltrados.length === 0) {
+    pendWrap.innerHTML = '<div class="pend-empty">Nenhuma pendência encontrada para "' + escapeHtml(buscaPendInput.value) + '".</div>';
+  } else {
+    pendWrap.innerHTML = '<div class="pend-wrap">' + pendentesFiltrados.map(h => `
+      <div class="pend-row">
+        <div>
+          <div class="pend-nome">${escapeHtml(h.nome || 'Sem nome')}</div>
+          <div class="pend-info">${h.data} às ${h.hora} · total ${fmt(h.total)}</div>
+        </div>
+        <div class="pend-val">Falta ${fmt(h.falta)}</div>
+      </div>`).join('') + '</div>';
+  }
 
   document.getElementById('arr-cartoes').textContent = fmt(totCart);
   document.getElementById('arr-cartoes-qt').textContent = (qtC1+qtC2) + ' un.';
@@ -369,8 +597,8 @@ function renderArrecadacao() {
 
   // ── Resultado (Arrecadação x Despesas x Lucro) ──
   const totDespesas = despesas.reduce((a,d) => a + d.valor, 0);
-  const lucro = grand - totDespesas;
-  document.getElementById('arr-receita').textContent = fmt(grand);
+  const lucro = totalRecebido - totDespesas;
+  document.getElementById('arr-receita').textContent = fmt(totalRecebido);
   document.getElementById('arr-desp-total').textContent = fmt(totDespesas);
   const lucroEl = document.getElementById('arr-lucro');
   lucroEl.textContent = fmt(lucro);
@@ -404,11 +632,24 @@ async function exportarWord() {
   const lucro = grand - totDesp;
   const agora = new Date().toLocaleDateString('pt-BR');
 
-  const linhasLanc = historico.map(h => `
+  const totalPendente = historico.reduce((a,h) => a + (h.falta || 0), 0);
+  const totalRecebido = grand - totalPendente;
+  const lucroCaixa = totalRecebido - totDesp;
+
+  const linhasLanc = historico.map(h => {
+    const status = h.status || 'completo';
+    const statusTxt = status === 'pendente' ? `Pendente (falta ${fmt(h.falta||0)})` : 'Pago';
+    return `
     <tr>
-      <td>${h.data} ${h.hora}</td><td>${h.qt1}</td><td>${h.qt2}</td>
-      <td>${h.qb}</td><td>${h.qs}</td><td>${h.qc}</td><td>${fmt(h.total)}</td>
-    </tr>`).join('');
+      <td>${h.data} ${h.hora}</td><td>${escapeHtml(h.nome || '—')}</td><td>${h.pagamento === 'pix' ? 'Pix' : (h.pagamento === 'dinheiro' ? 'Dinheiro' : '—')}</td>
+      <td>${h.qt1}</td><td>${h.qt2}</td>
+      <td>${h.qb}</td><td>${h.qs}</td><td>${h.qc}</td><td>${fmt(h.total)}</td><td>${statusTxt}</td>
+    </tr>`;
+  }).join('');
+
+  const pendentesList = historico.filter(h => (h.status||'completo') === 'pendente');
+  const linhasPend = pendentesList.map(h => `
+    <tr><td>${escapeHtml(h.nome || '—')}</td><td>${h.data} ${h.hora}</td><td>${fmt(h.total)}</td><td>${fmt(h.falta)}</td></tr>`).join('');
 
   const linhasDesp = despesas.map(d => `
     <tr><td>${d.data} ${d.hora}</td><td>${escapeHtml(d.desc)}</td><td>${escapeHtml(d.forma)}</td><td>${fmt(d.valor)}</td></tr>`).join('');
@@ -436,15 +677,23 @@ async function exportarWord() {
         <tr><td>Bebidas</td><td>${fmt(totBeb)}</td></tr>
         <tr><td>Sobremesas</td><td>${fmt(totSob)}</td></tr>
         <tr><td>Camisetas</td><td>${fmt(totCam)}</td></tr>
-        <tr class="total-row"><td>Total Arrecadado</td><td>${fmt(grand)}</td></tr>
+        <tr class="total-row"><td>Total Vendido (nominal)</td><td>${fmt(grand)}</td></tr>
+        <tr class="total-row"><td>Pendências (a receber)</td><td>${fmt(totalPendente)}</td></tr>
+        <tr class="total-row"><td>Total Efetivamente Recebido</td><td>${fmt(totalRecebido)}</td></tr>
         <tr class="total-row"><td>Total Despesas</td><td>${fmt(totDesp)}</td></tr>
-        <tr class="total-row"><td>Lucro Líquido</td><td>${fmt(lucro)}</td></tr>
+        <tr class="total-row"><td>Lucro Líquido (caixa)</td><td>${fmt(lucroCaixa)}</td></tr>
       </table>
 
       <h2>Histórico de Lançamentos</h2>
       <table>
-        <tr><th>Data/Hora</th><th>Cart.1</th><th>Cart.2</th><th>Bebidas</th><th>Sobrem.</th><th>Camis.</th><th>Total</th></tr>
-        ${linhasLanc || '<tr><td colspan="7">Nenhum lançamento registrado.</td></tr>'}
+        <tr><th>Data/Hora</th><th>Nome</th><th>Pagamento</th><th>Cart.1</th><th>Cart.2</th><th>Bebidas</th><th>Sobrem.</th><th>Camis.</th><th>Total</th><th>Status</th></tr>
+        ${linhasLanc || '<tr><td colspan="10">Nenhum lançamento registrado.</td></tr>'}
+      </table>
+
+      <h2>Pendências (a receber)</h2>
+      <table>
+        <tr><th>Nome</th><th>Data/Hora</th><th>Total</th><th>Falta</th></tr>
+        ${linhasPend || '<tr><td colspan="4">Nenhuma pendência.</td></tr>'}
       </table>
 
       <h2>Histórico de Despesas</h2>
@@ -465,6 +714,15 @@ async function exportarWord() {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
+
+// Fecha o modal de edição clicando fora dele ou pressionando Esc
+document.addEventListener('click', (e) => {
+  const overlay = document.getElementById('modal-editar');
+  if (e.target === overlay) fecharModalEdicao();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') fecharModalEdicao();
+});
 
 // Carrega ao iniciar
 (async function init() {

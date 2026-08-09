@@ -77,6 +77,11 @@
       <span class="tv" id="r_total">R$ 0,00</span>
     </div>
 
+    <div class="nome-wrap">
+      <label>👤 Nome do Comprador</label>
+      <input type="text" id="nome-comprador" placeholder="Nome de quem está comprando">
+    </div>
+
     <div class="pagamento-wrap">
       <div class="pag-title">💳 Forma de Pagamento</div>
       <div class="pag-tabs">
@@ -102,6 +107,8 @@
           <span class="tr-label">Troco</span>
           <span class="tr-val" id="troco-val">—</span>
         </div>
+        <button class="btn-confirmar-dinheiro" id="btn-confirmar-dinheiro" onclick="confirmarDinheiro()">✔ Confirmar Pagamento</button>
+        <div class="dinheiro-confirmado" id="dinheiro-confirmado">✅ Lançamento registrado!</div>
       </div>
       <div class="pag-pix" id="pag-pix">
         <div class="pix-box">
@@ -119,6 +126,11 @@
     <div class="hist-header">
       <div class="hist-title">📋 Histórico de Lançamentos</div>
       <button class="btn-zerar" onclick="zerarTudo()">🗑 Zerar Histórico</button>
+    </div>
+    <div class="busca-wrap">
+      <span class="busca-icon">🔎</span>
+      <input type="text" id="busca-nome" placeholder="Buscar por nome..." oninput="renderHistorico()">
+      <button class="busca-limpar" id="busca-limpar" onclick="limparBusca()" title="Limpar busca">✕</button>
     </div>
     <ul class="historico-lista" id="historico">
       <li class="empty-hist">Carregando...</li>
@@ -235,10 +247,18 @@
   </div>
 
   <div class="arr-hero">
-    <div class="arr-hero-label">✦ Total Geral Arrecadado ✦</div>
+    <div class="arr-hero-label">✦ Total Geral Arrecadado (recebido) ✦</div>
     <div class="arr-hero-val" id="arr-total">R$ 0,00</div>
     <div class="arr-hero-sub" id="arr-lancamentos">0 lançamento(s) registrado(s)</div>
   </div>
+
+  <div class="section-title">⚠ Pendências a Receber</div>
+  <div class="busca-wrap">
+    <span class="busca-icon">🔎</span>
+    <input type="text" id="busca-nome-pend" placeholder="Buscar por nome..." oninput="renderArrecadacao()">
+    <button class="busca-limpar" id="busca-limpar-pend" onclick="limparBuscaPend()" title="Limpar busca">✕</button>
+  </div>
+  <div id="pend-wrap"></div>
 
   <div class="section-title">📈 Resultado do Evento</div>
   <div class="arr-lucro-grid">
@@ -317,6 +337,52 @@
 </div>
 
 <div class="sync-badge"><span class="sync-dot" id="sync-dot"></span><span id="sync-text">sincronizado</span></div>
+
+<!-- ══════════ MODAL: EDITAR LANÇAMENTO ══════════ -->
+<div class="modal-overlay" id="modal-editar">
+  <div class="modal-box">
+    <div class="modal-title">✎ Editar Lançamento</div>
+
+    <div class="modal-field">
+      <label>Nome do Comprador</label>
+      <input type="text" id="edit-nome" placeholder="Nome de quem comprou">
+    </div>
+
+    <div class="modal-grid">
+      <div class="modal-field">
+        <label>Cartão Tipo 1</label>
+        <input type="number" id="edit-qt1" min="0" oninput="atualizarPreviewEdicao()">
+      </div>
+      <div class="modal-field">
+        <label>Cartão Tipo 2</label>
+        <input type="number" id="edit-qt2" min="0" oninput="atualizarPreviewEdicao()">
+      </div>
+      <div class="modal-field">
+        <label>Bebidas</label>
+        <input type="number" id="edit-qb" min="0" oninput="atualizarPreviewEdicao()">
+      </div>
+      <div class="modal-field">
+        <label>Sobremesas</label>
+        <input type="number" id="edit-qs" min="0" oninput="atualizarPreviewEdicao()">
+      </div>
+      <div class="modal-field">
+        <label>Camisetas</label>
+        <input type="number" id="edit-qc" min="0" oninput="atualizarPreviewEdicao()">
+      </div>
+      <div class="modal-field">
+        <label>Valor Já Pago (R$)</label>
+        <input type="number" id="edit-valorpago" min="0" step="0.01" oninput="atualizarPreviewEdicao()">
+      </div>
+    </div>
+
+    <div class="modal-total-preview" id="edit-total-preview">Novo total: R$ 0,00</div>
+
+    <div class="modal-actions">
+      <button class="btn-modal-cancelar" onclick="fecharModalEdicao()">Cancelar</button>
+      <button class="btn-modal-salvar" onclick="salvarEdicao()">💾 Salvar</button>
+    </div>
+  </div>
+</div>
 
 <script src="script.js"></script>
 </body>
