@@ -1,5 +1,5 @@
 // PREÇOS FIXOS
-const PRECOS = { cart1: 30, cart2: 20, beb: 3, sob: 5, cam: 45 };
+const PRECOS = { cart1: 30, cart2: 20, beb: 3, sob: 5, cam: 40 };
 const SENHA_EXCLUSAO = 'amanda281108';
 
 function confirmarSenha() {
