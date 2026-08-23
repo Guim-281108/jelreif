@@ -46,7 +46,10 @@ async function carregar() {
   try {
     const r = await fetch(`${FIREBASE_URL}/historico.json`);
     const data = await r.json();
-    historico = data || [];
+    // Firebase pode retornar objeto (com "buracos") em vez de array, ou registros
+    // incompletos/editados manualmente — normalizamos tudo aqui.
+    const bruto = Array.isArray(data) ? data : Object.values(data || {});
+    historico = bruto.filter(Boolean).map(saneiaLancamento);
   } catch (e) { console.error('Erro ao carregar histórico:', e); historico = []; }
 }
 async function salvarDespesas() {
@@ -65,12 +68,32 @@ async function carregarDespesas() {
   try {
     const r = await fetch(`${FIREBASE_URL}/despesas.json`);
     const data = await r.json();
-    despesas = data || [];
+    const bruto = Array.isArray(data) ? data : Object.values(data || {});
+    despesas = bruto.filter(Boolean).map(d => ({ ...d, valor: num(d.valor) }));
   } catch (e) { console.error('Erro ao carregar despesas:', e); despesas = []; }
 }
 
 function fmt(v) {
-  return 'R$ ' + Number(v).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+  return 'R$ ' + Number(v || 0).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+// Converte qualquer valor (undefined, null, string, NaN) em um número seguro para uso em somas
+function num(v) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+}
+// Garante que um lançamento do histórico tenha todos os campos numéricos válidos,
+// recalculando os subtotais a partir das quantidades sempre que necessário.
+// Isso evita que um registro corrompido (ex: editado manualmente no Firebase) contamine
+// as somas de toda a lista com NaN.
+function saneiaLancamento(h) {
+  const qt1 = num(h.qt1), qt2 = num(h.qt2), qb = num(h.qb), qs = num(h.qs), qc = num(h.qc);
+  const c1 = Number.isFinite(Number(h.c1)) ? num(h.c1) : qt1 * PRECOS.cart1;
+  const c2 = Number.isFinite(Number(h.c2)) ? num(h.c2) : qt2 * PRECOS.cart2;
+  const beb = Number.isFinite(Number(h.beb)) ? num(h.beb) : qb * PRECOS.beb;
+  const sob = Number.isFinite(Number(h.sob)) ? num(h.sob) : qs * PRECOS.sob;
+  const cam = Number.isFinite(Number(h.cam)) ? num(h.cam) : qc * PRECOS.cam;
+  const total = Number.isFinite(Number(h.total)) ? num(h.total) : (c1+c2+beb+sob+cam);
+  return { ...h, qt1, qt2, qb, qs, qc, c1, c2, beb, sob, cam, total, falta: num(h.falta) };
 }
 function normalizar(str) {
   return (str || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
@@ -478,16 +501,16 @@ function renderDespesas() {
       ul.appendChild(li);
     });
   }
-  const total = despesas.reduce((a,d) => a + d.valor, 0);
+  const total = despesas.reduce((a,d) => a + num(d.valor), 0);
   document.getElementById('desp-total').textContent = fmt(total);
   document.getElementById('desp-count').textContent = despesas.length + ' despesa(s) registrada(s)';
 }
 
 // ── VENDAS CARTÕES ──
 function renderVendas() {
-  const totQt1 = historico.reduce((a,h) => a + h.qt1, 0);
-  const totQt2 = historico.reduce((a,h) => a + h.qt2, 0);
-  const totValCart = historico.reduce((a,h) => a + h.c1 + h.c2, 0);
+  const totQt1 = historico.reduce((a,h) => a + num(h.qt1), 0);
+  const totQt2 = historico.reduce((a,h) => a + num(h.qt2), 0);
+  const totValCart = historico.reduce((a,h) => a + num(h.c1) + num(h.c2), 0);
 
   document.getElementById('vc-qt1').textContent = totQt1;
   document.getElementById('vc-qt2').textContent = totQt2;
@@ -532,23 +555,23 @@ function limparBuscaPend() {
 }
 
 function renderArrecadacao() {
-  const totC1  = historico.reduce((a,h) => a + h.c1, 0);
-  const totC2  = historico.reduce((a,h) => a + h.c2, 0);
-  const totBeb = historico.reduce((a,h) => a + h.beb, 0);
-  const totSob = historico.reduce((a,h) => a + h.sob, 0);
-  const totCam = historico.reduce((a,h) => a + h.cam, 0);
+  const totC1  = historico.reduce((a,h) => a + num(h.c1), 0);
+  const totC2  = historico.reduce((a,h) => a + num(h.c2), 0);
+  const totBeb = historico.reduce((a,h) => a + num(h.beb), 0);
+  const totSob = historico.reduce((a,h) => a + num(h.sob), 0);
+  const totCam = historico.reduce((a,h) => a + num(h.cam), 0);
   const totCart = totC1 + totC2;
   const grand = totCart + totBeb + totSob + totCam; // valor total vendido (nominal)
 
   // Valor efetivamente recebido / pendente (compatível com lançamentos antigos sem esses campos)
-  const totalPendente = historico.reduce((a,h) => a + (h.falta || 0), 0);
+  const totalPendente = historico.reduce((a,h) => a + num(h.falta), 0);
   const totalRecebido = grand - totalPendente;
 
-  const qtC1  = historico.reduce((a,h) => a + h.qt1, 0);
-  const qtC2  = historico.reduce((a,h) => a + h.qt2, 0);
-  const qtBeb = historico.reduce((a,h) => a + h.qb, 0);
-  const qtSob = historico.reduce((a,h) => a + h.qs, 0);
-  const qtCam = historico.reduce((a,h) => a + h.qc, 0);
+  const qtC1  = historico.reduce((a,h) => a + num(h.qt1), 0);
+  const qtC2  = historico.reduce((a,h) => a + num(h.qt2), 0);
+  const qtBeb = historico.reduce((a,h) => a + num(h.qb), 0);
+  const qtSob = historico.reduce((a,h) => a + num(h.qs), 0);
+  const qtCam = historico.reduce((a,h) => a + num(h.qc), 0);
 
   document.getElementById('arr-total').textContent = fmt(totalRecebido);
   let lancTxt = historico.length + ' lançamento(s) registrado(s)';
@@ -596,7 +619,7 @@ function renderArrecadacao() {
   document.getElementById('arr-c2-qt').textContent = qtC2 + ' un.';
 
   // ── Resultado (Arrecadação x Despesas x Lucro) ──
-  const totDespesas = despesas.reduce((a,d) => a + d.valor, 0);
+  const totDespesas = despesas.reduce((a,d) => a + num(d.valor), 0);
   const lucro = totalRecebido - totDespesas;
   document.getElementById('arr-receita').textContent = fmt(totalRecebido);
   document.getElementById('arr-desp-total').textContent = fmt(totDespesas);
@@ -625,14 +648,14 @@ function renderArrecadacao() {
 async function exportarWord() {
   await refrescarDados();
 
-  const totC1 = historico.reduce((a,h)=>a+h.c1,0), totC2 = historico.reduce((a,h)=>a+h.c2,0);
-  const totBeb = historico.reduce((a,h)=>a+h.beb,0), totSob = historico.reduce((a,h)=>a+h.sob,0), totCam = historico.reduce((a,h)=>a+h.cam,0);
+  const totC1 = historico.reduce((a,h)=>a+num(h.c1),0), totC2 = historico.reduce((a,h)=>a+num(h.c2),0);
+  const totBeb = historico.reduce((a,h)=>a+num(h.beb),0), totSob = historico.reduce((a,h)=>a+num(h.sob),0), totCam = historico.reduce((a,h)=>a+num(h.cam),0);
   const grand = totC1+totC2+totBeb+totSob+totCam;
-  const totDesp = despesas.reduce((a,d)=>a+d.valor,0);
+  const totDesp = despesas.reduce((a,d)=>a+num(d.valor),0);
   const lucro = grand - totDesp;
   const agora = new Date().toLocaleDateString('pt-BR');
 
-  const totalPendente = historico.reduce((a,h) => a + (h.falta || 0), 0);
+  const totalPendente = historico.reduce((a,h) => a + num(h.falta), 0);
   const totalRecebido = grand - totalPendente;
   const lucroCaixa = totalRecebido - totDesp;
 
