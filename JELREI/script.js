@@ -1,5 +1,5 @@
 // PREÇOS FIXOS
-const PRECOS = { cart1: 30, cart2: 20, beb: 3, sob: 5, cam: 40 };
+const PRECOS = { cart1: 30, cart2: 20, beb: 3, sob: 5, cam: 45 };
 const SENHA_EXCLUSAO = 'amanda281108';
 
 function confirmarSenha() {
@@ -498,12 +498,16 @@ function renderVendas() {
   const tabela = document.getElementById('vc-tabela');
   const tbody = document.getElementById('vc-tbody');
 
-  if (historico.length === 0) {
+  // Só entram na tabela de detalhes os lançamentos que tiveram venda de cartão (Tipo 1 ou Tipo 2).
+  // Lançamentos que foram só bebida/sobremesa/camiseta (0 cartões) não aparecem aqui.
+  const historicoCartoes = historico.filter(h => (h.qt1 || 0) + (h.qt2 || 0) > 0);
+
+  if (historicoCartoes.length === 0) {
     empty.style.display = 'block'; tabela.style.display = 'none'; return;
   }
   empty.style.display = 'none'; tabela.style.display = 'table';
   tbody.innerHTML = '';
-  historico.forEach(h => {
+  historicoCartoes.forEach(h => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${h.data} ${h.hora}</td>
